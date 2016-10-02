@@ -8,5 +8,7 @@ ghp-import==0.4.1
 matplotlib==1.5.1
 pandas==0.18.1
 numpy
+scipy
+rpy2
 
 
