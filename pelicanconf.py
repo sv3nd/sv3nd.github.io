@@ -21,13 +21,12 @@ AUTHOR_FEED_RSS = None
 
 # Blogroll
 LINKS = (
-         ("My github page", 'https://github.com/svendx4f'),
-         ("My twitter feed", 'https://twitter.com/svend_x4f'),
+         ("Svend's github page", 'https://github.com/svendx4f'),
         )
 
 # Social widget
-SOCIAL = (('You can add links in your config file', '#'),
-          ('Another social link', '#'),)
+SOCIAL = (("Svend's twitter feed", 'https://twitter.com/svend_x4f'),
+          )
 
 DEFAULT_PAGINATION = 5
 
