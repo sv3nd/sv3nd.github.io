@@ -1007,11 +1007,11 @@ $$
 &lt;h2 id="Normalization-of-a-log-likelihood-vector"&gt;Normalization of a log-likelihood vector&lt;a class="anchor-link" href="#Normalization-of-a-log-likelihood-vector"&gt;¶&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;Assume we have a learning model outputting a log likelihood vector $(L_0, ... L_{M-1})$ and we know the $M$ classes correspond to M mutually exclusive and collectively exhaustive events. What is the best way to obtain the corresponding probability vector, i.e the vector of probability that sum up to one?&lt;/p&gt;
 &lt;p&gt;A naive approach consists in converting those log likelihoods into likelihoods and normalizing them, which corresponds to the &lt;a href="https://en.wikipedia.org/wiki/Softmax_function"&gt;softmax function&lt;/a&gt;:&lt;/p&gt;
 $$
-P_i = \frac{e^{L_i}}{\sum_j e^{L_j}} \text{ for } i \in [0, M-1]
+P_i = \frac{e^{L_i}}{\sum_j e^{L_j}} 
 $$&lt;p&gt;Although this is mathematically correct, this quickly leads to a similar underflow as described above in case of very small values of $L_i$, which are very common for the reasons reminded above (i.e. being the result of multiplying tons of small probabilities).&lt;/p&gt;
 &lt;p&gt;The alternative is to perform the normalization in log domain, i.e, to transform the $(L_0, ... L_{M-1})$ vector into another likelihood vector $(K_0, ... K_{M-1})$, such that:&lt;/p&gt;
 $$
-P_i = e^{K_i}\in [0, M-1]
+P_i = e^{K_i}
 $$&lt;p&gt;Putting the last two relations together, we directly see we can compute the $K_i$ from the $L_i$ without leaving the log domain:&lt;/p&gt;
 $$
 K_i = L_i - log \sum_j e^{L_j}

@@ -1045,11 +1045,11 @@ $$
 <h2 id="Normalization-of-a-log-likelihood-vector">Normalization of a log-likelihood vector<a class="anchor-link" href="#Normalization-of-a-log-likelihood-vector">¶</a></h2><p>Assume we have a learning model outputting a log likelihood vector $(L_0, ... L_{M-1})$ and we know the $M$ classes correspond to M mutually exclusive and collectively exhaustive events. What is the best way to obtain the corresponding probability vector, i.e the vector of probability that sum up to one?</p>
 <p>A naive approach consists in converting those log likelihoods into likelihoods and normalizing them, which corresponds to the <a href="https://en.wikipedia.org/wiki/Softmax_function">softmax function</a>:</p>
 $$
-P_i = \frac{e^{L_i}}{\sum_j e^{L_j}} \text{ for } i \in [0, M-1]
+P_i = \frac{e^{L_i}}{\sum_j e^{L_j}} 
 $$<p>Although this is mathematically correct, this quickly leads to a similar underflow as described above in case of very small values of $L_i$, which are very common for the reasons reminded above (i.e. being the result of multiplying tons of small probabilities).</p>
 <p>The alternative is to perform the normalization in log domain, i.e, to transform the $(L_0, ... L_{M-1})$ vector into another likelihood vector $(K_0, ... K_{M-1})$, such that:</p>
 $$
-P_i = e^{K_i}\in [0, M-1]
+P_i = e^{K_i}
 $$<p>Putting the last two relations together, we directly see we can compute the $K_i$ from the $L_i$ without leaving the log domain:</p>
 $$
 K_i = L_i - log \sum_j e^{L_j}
@@ -2588,18 +2588,15 @@ BCAAAQhAAAIQgAAEkkrg/wAfhAQTieVlmwAAAABJRU5ErkJggg==
   </article>
 </section>
         <section id="extras" class="body">
-                <div class="blogroll">
-                        <h2>blogroll</h2>
-                        <ul>
-                            <li><a href="https://github.com/svendx4f">Svend's github page</a></li>
-                        </ul>
-                </div><!-- /.blogroll -->
                 <div class="social">
                         <h2>social</h2>
                         <ul>
                             <li><a href="https://svendx4f.github.io/feeds/all.atom.xml" type="application/atom+xml" rel="alternate">atom feed</a></li>
 
-                            <li><a href="https://twitter.com/svend_x4f">Svend's twitter feed</a></li>
+                            <li><a href="https://github.com/svendx4f">Svend's Github profile</a></li>
+                            <li><a href="https://twitter.com/svend_x4f">Svend's Twitter feed</a></li>
+                            <li><a href="https://be.linkedin.com/in/vanderveken">Svend's LinkedIn profile</a></li>
+                            <li><a href="http://stackoverflow.com/users/3318335/svend">Svend's StackOverflow profile</a></li>
                         </ul>
                 </div><!-- /.social -->
         </section><!-- /#extras -->
