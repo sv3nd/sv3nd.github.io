@@ -978,6 +978,7 @@ h6:hover .anchor-link {
 &lt;div class="text_cell_render border-box-sizing rendered_html"&gt;
 &lt;h1 id="How-to-normalize-log-likelihood-vectors"&gt;How to normalize log-likelihood vectors&lt;a class="anchor-link" href="#How-to-normalize-log-likelihood-vectors"&gt;¶&lt;/a&gt;&lt;/h1&gt;&lt;p&gt;What is the best way to convert a log-likelihood vector into the corresponding log-probability vector, i.e. a vector of values whose exponential sum up to one?&lt;/p&gt;
 &lt;p&gt;TLDR: just subtract the &lt;code&gt;scipy.misc.logsumexp()&lt;/code&gt; of that vector.&lt;/p&gt;
+&lt;p&gt;Note: this notebook is &lt;a href="https://github.com/svendx4f/svendx4f.github.io/blob/dev/content/how_to_normalize_likelihood_vectors.ipynb"&gt;available on Gitbub&lt;/a&gt; in case you want to play around with it.&lt;/p&gt;
 &lt;/div&gt;
 &lt;/div&gt;
 &lt;/div&gt;
