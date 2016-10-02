@@ -21,11 +21,14 @@ AUTHOR_FEED_RSS = None
 
 # Blogroll
 LINKS = (
-         ("Svend's github page", 'https://github.com/svendx4f'),
         )
 
 # Social widget
-SOCIAL = (("Svend's twitter feed", 'https://twitter.com/svend_x4f'),
+SOCIAL = (
+         ("Svend's Github profile", 'https://github.com/svendx4f'),
+     	 ("Svend's Twitter feed", 'https://twitter.com/svend_x4f'),
+     	 ("Svend's LinkedIn profile", 'https://be.linkedin.com/in/vanderveken'),
+     	 ("Svend's StackOverflow profile", 'http://stackoverflow.com/users/3318335/svend'),
           )
 
 DEFAULT_PAGINATION = 5
