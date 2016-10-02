@@ -1,0 +1,7 @@
+Title: How to normalize log-likelihood vectors
+Slug: how-to-normalize-log-likelihood-vectors
+Date: 2016-10-02 18:29
+Category: 
+Tags: probability, scipy, python
+Author: Svend Vanderveken
+Summary: A short illustration of the risk of underflow and its solution in the case of normalizing log-likelihood vectors.
