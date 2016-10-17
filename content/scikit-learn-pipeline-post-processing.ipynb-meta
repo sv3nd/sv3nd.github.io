@@ -1,0 +1,7 @@
+Title: Using model post-processor within scikit-learn pipelines 
+Slug: using-model-post-processor-within-scikit-learn-pipelines
+Date: 2016-10-18 14:22
+Category: data 
+Tags: scikit-learn, machine-learning  
+Author: Svend Vanderveken
+Summary: Description of two simple pipeline wrapper to allow post-processing model output as part of a scikit-learn pipeline
