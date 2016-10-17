@@ -1,5 +1,10 @@
 following instructions from: https://www.dataquest.io/blog/how-to-setup-a-data-science-blog/
 
-pelican content -s publishconf.py
+preview:
+ pelican content
+ cd output
+ python -m pelican.server
 
-ghp-import output -b master
+publish:
+ pelican content -s publishconf.py
+ ghp-import output -b master
