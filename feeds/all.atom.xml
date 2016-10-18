@@ -1001,7 +1001,7 @@ h6:hover .anchor-link {
 &lt;li&gt;each element of the pipeline, except maybe the last one, must be &lt;em&gt;transformers&lt;/em&gt;, i.e. provide a &lt;code&gt;transform(X)&lt;/code&gt; method&lt;/li&gt;
 &lt;li&gt;the last element of a pipeline can either be a &lt;em&gt;transformer&lt;/em&gt;, in which case the result behaves like a grand-unified transformer, or a &lt;em&gt;predictor&lt;/em&gt;, i.e. a element providing a &lt;code&gt;predict()&lt;/code&gt; or &lt;code&gt;predict_proba()&lt;/code&gt; (this is a simplification, see the actual API for details). In the later case, the resulting pipeline behaves like a predictor, can be used for scoring and can be used in a cross-validation pipeline. &lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;img src="scikit-learn-pipeline-post-processing/sk_pipeline.png" alt=""&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="images/scikit-learn-pipeline-post-processing_sk_pipeline.png" alt="scikit-learn pipeline"&gt;&lt;/p&gt;
 &lt;p&gt;I am not knowledgeable about nor experienced with  the scikit-learn architecure to understand the rationale of this choice. My naive reaction is that the distinction between the three functions (&lt;code&gt;transform()&lt;/code&gt;, &lt;code&gt;predict()&lt;/code&gt;and &lt;code&gt;predict_proba()&lt;/code&gt; is of importance for other parts of the architecture, or present for historical reasons. My first apporach to this is that maybe just a single &lt;code&gt;transform()&lt;/code&gt; function would have been enough and allows more composition flexibility.&lt;/p&gt;
 
 &lt;/div&gt;
@@ -1019,7 +1019,7 @@ h6:hover .anchor-link {
 &lt;li&gt;&lt;p&gt;Another (rather theoretical) example is simple composed models, like logistic regression, which stricto-senso is a learning model piped into a sigmoid transformer.&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;img src="scikit-learn-pipeline-post-processing/lin_reg.png" alt=""&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="images/scikit-learn-pipeline-post-processing_sk_pipeline_lin_reg.png" alt="linear regression"&gt;&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;Finall, model calibration techniques, like adjusting predicted probability to actually observed proportion within a validation set, could be implemented as post-processors.&lt;/li&gt;
 &lt;/ul&gt;
@@ -1034,9 +1034,9 @@ h6:hover .anchor-link {
 &lt;div class="text_cell_render border-box-sizing rendered_html"&gt;
 &lt;h2 id="Existing-workarounds"&gt;Existing workarounds&lt;a class="anchor-link" href="#Existing-workarounds"&gt;&amp;#182;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;Before introducing the simple wrappers I coded below, let's clarify that those "limitation" are not a showstopper.&lt;/p&gt;
 &lt;p&gt;In the Kaggle example I gave above, an easy workaround consists in writting a custom scoring method that post-processes the model output before actually scoring it. This enables to have a correct score in each fold of the cross-validation loop:&lt;/p&gt;
-&lt;p&gt;&lt;img src="scikit-learn-pipeline-post-processing/sk_cross_val.png" alt=""&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="images/scikit-learn-pipeline-post-processing_sk_pipeline_sk_cross_val.png" alt="post-processing in scorer"&gt;&lt;/p&gt;
 &lt;p&gt;In the case of logistic regression, &lt;a href="http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html"&gt;Scikit-learn is of course providing an implementation that includes the sigmoid as art of the model itself&lt;/a&gt;, this is working perfectly fine and poses no issues. My only point here is that if one was to re-implement a logistic regression algorithm today, this person would not be able to break it down as a several steps of a scikit-learn pipeline.&lt;/p&gt;
-&lt;p&gt;&lt;img src="scikit-learn-pipeline-post-processing/sk_lin_reg_pipe.png" alt=""&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="images/scikit-learn-pipeline-post-processing_sk_pipeline_sk_lin_reg_pipe.png" alt="scikit-learn linear regression"&gt;&lt;/p&gt;
 &lt;p&gt;In both cases, in term of software design we can see that the concept of transformation &lt;em&gt;leaks&lt;/em&gt; from the transformer itself to the nearest adjacent elements in the pipeline, either the scoring method or the model itself.&lt;/p&gt;
 
 &lt;/div&gt;
@@ -1154,7 +1154,7 @@ h6:hover .anchor-link {
 &lt;/div&gt;
 &lt;div class="cell border-box-sizing code_cell rendered"&gt;
 &lt;div class="input"&gt;
-&lt;div class="prompt input_prompt"&gt;In&amp;nbsp;[&amp;nbsp;]:&lt;/div&gt;
+&lt;div class="prompt input_prompt"&gt;In&amp;nbsp;[1]:&lt;/div&gt;
 &lt;div class="inner_cell"&gt;
     &lt;div class="input_area"&gt;
 &lt;div class=" highlight hl-ipython2"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;sys&lt;/span&gt;
@@ -1251,7 +1251,7 @@ h6:hover .anchor-link {
 &lt;p&gt;&lt;code&gt;main_learning_pp&lt;/code&gt; is really just a very basic pipeline, with one &lt;code&gt;1d-pre-proces&lt;/code&gt; step to scale numerical features, one PCA dimensionality reduction, and finaly one lineare model. As discussed above, I wrap this into a &lt;code&gt;TransformingPredictorPipeline&lt;/code&gt; in order to make it behave like a transformer.&lt;/p&gt;
 &lt;p&gt;The main point of this example is what comes next: we can now place the two supplementary post-processors as promised: &lt;code&gt;to_integer&lt;/code&gt; and &lt;code&gt;to_non_negative&lt;/code&gt;.&lt;/p&gt;
 &lt;p&gt;Finaly, in order to be able to score this as part of a cross-validation loop, we need this to behave like predictor, so we wrap it again, this time within &lt;code&gt;TransformingPredictorPipeline&lt;/code&gt;.&lt;/p&gt;
-&lt;p&gt;&lt;img src="scikit-learn-pipeline-post-processing/final_pipeline.png" alt=""&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="images/scikit-learn-pipeline-post-processing_sk_pipeline_final_pipeline.png" alt="example pipeline with post-processors"&gt;&lt;/p&gt;
 &lt;p&gt;An example usage is provided below:&lt;/p&gt;
 
 &lt;/div&gt;
