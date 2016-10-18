@@ -1009,9 +1009,10 @@ h6:hover .anchor-link {
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h1 id="How-to-normalize-log-likelihood-vectors">How to normalize log-likelihood vectors<a class="anchor-link" href="#How-to-normalize-log-likelihood-vectors">¶</a></h1><p>What is the best way to convert a log-likelihood vector into the corresponding log-probability vector, i.e. a vector of values whose exponential sum up to one?</p>
+<h1 id="How-to-normalize-log-likelihood-vectors">How to normalize log-likelihood vectors<a class="anchor-link" href="#How-to-normalize-log-likelihood-vectors">&#182;</a></h1><p>What is the best way to convert a log-likelihood vector into the corresponding log-probability vector, i.e. a vector of values whose exponential sum up to one?</p>
 <p>TLDR: just subtract the <code>scipy.misc.logsumexp()</code> of that vector.</p>
 <p>Note: this notebook is <a href="https://github.com/svendx4f/svendx4f.github.io/blob/dev/content/how_to_normalize_likelihood_vectors.ipynb">available on Github</a> in case you want to play around with it.</p>
+
 </div>
 </div>
 </div>
@@ -1020,7 +1021,7 @@ h6:hover .anchor-link {
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Usage-of-logs-in-probability-and-likelihood-computations">Usage of logs in probability and likelihood computations<a class="anchor-link" href="#Usage-of-logs-in-probability-and-likelihood-computations">¶</a></h2><p>Given a set of independent events $D= \{E_i\}$ with probabilities $\{p_i\}$, the probability of the joint occurance of all events in $D$ is simply</p>
+<h2 id="Usage-of-logs-in-probability-and-likelihood-computations">Usage of logs in probability and likelihood computations<a class="anchor-link" href="#Usage-of-logs-in-probability-and-likelihood-computations">&#182;</a></h2><p>Given a set of independent events $D= \{E_i\}$ with probabilities $\{p_i\}$, the probability of the joint occurance of all events in $D$ is simply</p>
 $$P_D = \prod\limits_i^N p_i$$<p>This quantity however quickly gets impossible to compute on a computer as-written above since, each $p_i$ $\in [0,1]$, the result gets smaller and smaller as the multiplication goes on and quickly leads to underflow. Usage of logarithms of probabilities and of likelihoods is a very common computational trick to avoid that underflow which exploits the fact that a logarithm transforms a product into a sum, i.e.</p>
 $$
 P_D = e^{log(\prod\limits_i P_i))} = e^{\sum\limits_i logP_i}
@@ -1037,7 +1038,7 @@ $$
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Normalization-of-a-log-likelihood-vector">Normalization of a log-likelihood vector<a class="anchor-link" href="#Normalization-of-a-log-likelihood-vector">¶</a></h2><p>Assume we have a learning model outputting a log likelihood vector $(L_0, ... L_{M-1})$ and we know the $M$ classes correspond to M mutually exclusive and collectively exhaustive events. What is the best way to obtain the corresponding probability vector, i.e the vector of probability that sum up to one?</p>
+<h2 id="Normalization-of-a-log-likelihood-vector">Normalization of a log-likelihood vector<a class="anchor-link" href="#Normalization-of-a-log-likelihood-vector">&#182;</a></h2><p>Assume we have a learning model outputting a log likelihood vector $(L_0, ... L_{M-1})$ and we know the $M$ classes correspond to M mutually exclusive and collectively exhaustive events. What is the best way to obtain the corresponding probability vector, i.e the vector of probability that sum up to one?</p>
 <p>A naive approach consists in converting those log likelihoods into likelihoods and normalizing them, which corresponds to the <a href="https://en.wikipedia.org/wiki/Softmax_function">softmax function</a>:</p>
 $$
 P_i = \frac{e^{L_i}}{\sum_j e^{L_j}} 
@@ -1049,10 +1050,11 @@ $$<p>Putting the last two relations together, we directly see we can compute the
 $$
 K_i = L_i - log \sum_j e^{L_j}
 $$<p>Which is not prone to underflow as above. Converting that to a probability vector is just a matter of taking the exponential, which this time is also less prone to underflow (since the $K_i$ should typically be much larger than the $L_i$)</p>
-<h2 id="Implementation-in-scipy">Implementation in scipy<a class="anchor-link" href="#Implementation-in-scipy">¶</a></h2><p>In python, <a href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.misc.logsumexp.html">scipy comes with</a> a numerically stable way of computing the later term, so converting the log-likelihood vector L into the corresponding log-probability vector is a simple matter of:</p>
+<h2 id="Implementation-in-scipy">Implementation in scipy<a class="anchor-link" href="#Implementation-in-scipy">&#182;</a></h2><p>In python, <a href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.misc.logsumexp.html">scipy comes with</a> a numerically stable way of computing the later term, so converting the log-likelihood vector L into the corresponding log-probability vector is a simple matter of:</p>
 <div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">scipy</span>
 <span class="n">K</span> <span class="o">=</span> <span class="n">L</span> <span class="o">-</span> <span class="n">scipy</span><span class="o">.</span><span class="n">misc</span><span class="o">.</span><span class="n">logsumexp</span><span class="p">(</span><span class="n">L</span><span class="p">)</span>
 </pre></div>
+
 </div>
 </div>
 </div>
@@ -1061,15 +1063,16 @@ $$<p>Which is not prone to underflow as above. Converting that to a probability 
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h1 id="Example">Example<a class="anchor-link" href="#Example">¶</a></h1><p>I built a small example to investigate just how quickly the rounding error can occur. It turns out that with the parameters I entered, they occur very quickly. Feel free to download this notebook and play with the noise of number of classes values and see what gets out.</p>
+<h1 id="Example">Example<a class="anchor-link" href="#Example">&#182;</a></h1><p>I built a small example to investigate just how quickly the rounding error can occur. It turns out that with the parameters I entered, they occur very quickly. Feel free to download this notebook and play with the noise of number of classes values and see what gets out.</p>
+
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In [1]:</div>
+<div class="prompt input_prompt">In&nbsp;[1]:</div>
 <div class="inner_cell">
-<div class="input_area">
+    <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="kn">as</span> <span class="nn">pd</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
@@ -1077,9 +1080,11 @@ $$<p>Which is not prone to underflow as above. Converting that to a probability 
 <span class="kn">import</span> <span class="nn">scipy.stats</span> <span class="kn">as</span> <span class="nn">stats</span>
 <span class="kn">import</span> <span class="nn">sys</span>
 </pre></div>
+
 </div>
 </div>
 </div>
+
 </div>
 <div class="cell border-box-sizing text_cell rendered">
 <div class="prompt input_prompt">
@@ -1088,38 +1093,39 @@ $$<p>Which is not prone to underflow as above. Converting that to a probability 
 <div class="text_cell_render border-box-sizing rendered_html">
 <p>My example is simulating inference with a probabilistic classifier that allocates to each observation a probability vector of size K describing the probability that this observation correspond to each class $k$.</p>
 <p>I simulate such classifier by assuming that we have $n$ observations, from which my fake model generates $n$ probability vectors. My imaginary classifier below has no bias but quite a serious variance:</p>
+
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In [2]:</div>
+<div class="prompt input_prompt">In&nbsp;[2]:</div>
 <div class="inner_cell">
-<div class="input_area">
+    <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="c1"># number of different values is some discrete random variable Y that we want to estimate</span>
 <span class="n">K</span> <span class="o">=</span> <span class="mi">12</span>
 
-<span class="c1"># the true class underlying all of the observation we're generating</span>
+<span class="c1"># the true class underlying all of the observation we&#39;re generating</span>
 <span class="n">y_true</span> <span class="o">=</span> <span class="mi">8</span>
 
-<span class="c1"># Weights given to each class by the classifier => this simulates a classifier</span>
+<span class="c1"># Weights given to each class by the classifier =&gt; this simulates a classifier</span>
 <span class="c1"># wich should more often output a higher probability to the true class y_true, although it </span>
 <span class="c1"># has a somehow large noise (standard deviation is 4, while we just have 12 classes)</span>
 <span class="n">classifier_p</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">norm</span><span class="o">.</span><span class="n">pdf</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="n">K</span><span class="p">),</span> <span class="n">loc</span><span class="o">=</span><span class="n">y_true</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
 <span class="n">classifier_p</span> <span class="o">=</span> <span class="n">classifier_p</span> <span class="o">/</span> <span class="n">classifier_p</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
 
 <span class="k">def</span> <span class="nf">make_up_some_observation_probs</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
-    <span class="sd">"""</span>
+    <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Generates a (n*K) matrix made of n probability rows corresponding to n observations</span>
 <span class="sd">    This simulatates some upstream learning model that generates such probability vector</span>
 <span class="sd">    for each of the n observed data.     </span>
 <span class="sd">    </span>
-<span class="sd">    All generated observation correspond to one single true class: y_true => any case where</span>
+<span class="sd">    All generated observation correspond to one single true class: y_true =&gt; any case where</span>
 <span class="sd">    the highest probability is != y_true is due to noise. </span>
-<span class="sd">    """</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     
     <span class="k">def</span> <span class="nf">random_observation_p</span><span class="p">():</span>
-        <span class="s2">""</span>
+        <span class="s2">&quot;&quot;</span>
         <span class="n">obs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">beta</span><span class="p">(</span><span class="n">alpha</span><span class="p">,</span> <span class="mi">1</span><span class="o">-</span><span class="n">alpha</span><span class="p">)</span> <span class="k">for</span> <span class="n">alpha</span> <span class="ow">in</span> <span class="n">classifier_p</span><span class="p">])</span>
         
         <span class="c1"># we prevent the fake model to output probability zero</span>
@@ -1129,53 +1135,59 @@ $$<p>Which is not prone to underflow as above. Converting that to a probability 
 
     <span class="k">return</span>  <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">random_observation_p</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)])</span>
 </pre></div>
+
 </div>
 </div>
 </div>
+
 </div>
 <div class="cell border-box-sizing text_cell rendered">
 <div class="prompt input_prompt">
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Class-inference">Class inference<a class="anchor-link" href="#Class-inference">¶</a></h2><p>Any call to <code>make_up_some_observation_probs()</code> above generates a full set of $n$ predicted probability vectors from which we have to infer a single resulting probability vector of being in each class. Said otherwise, the assumption is that the $n$ samples are all part of the same class and we're trying to determine which one is the most likely, given the observation.</p>
+<h2 id="Class-inference">Class inference<a class="anchor-link" href="#Class-inference">&#182;</a></h2><p>Any call to <code>make_up_some_observation_probs()</code> above generates a full set of $n$ predicted probability vectors from which we have to infer a single resulting probability vector of being in each class. Said otherwise, the assumption is that the $n$ samples are all part of the same class and we're trying to determine which one is the most likely, given the observation.</p>
 <p>Once this probability vector is available, we select the class having the highest probability with the method below. In practise, this problem would <em>not</em> require to convert log-probability nor log-likelihoods to probability: just comparing the log values provide the most likely class. I insist on performing the conversion though in order to observe how quickly the errors due to numerical computations occur.</p>
+
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In [3]:</div>
+<div class="prompt input_prompt">In&nbsp;[3]:</div>
 <div class="inner_cell">
-<div class="input_area">
+    <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="k">def</span> <span class="nf">map_predict</span><span class="p">(</span><span class="n">prob_vect</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">prob_vect</span><span class="o">.</span><span class="n">sum</span><span class="p">()):</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">prob_vect</span><span class="p">)</span>
 </pre></div>
+
 </div>
 </div>
 </div>
+
 </div>
 <div class="cell border-box-sizing text_cell rendered">
 <div class="prompt input_prompt">
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h1 id="Building-the-resulting-probability-vector">Building the resulting probability vector<a class="anchor-link" href="#Building-the-resulting-probability-vector">¶</a></h1><p>This section implements 3 inference models, all expecting a matrix of <code>n</code> probability vectors, corresponding to the <code>n</code> observed samples.</p>
+<h1 id="Building-the-resulting-probability-vector">Building the resulting probability vector<a class="anchor-link" href="#Building-the-resulting-probability-vector">&#182;</a></h1><p>This section implements 3 inference models, all expecting a matrix of <code>n</code> probability vectors, corresponding to the <code>n</code> observed samples.</p>
+
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In [4]:</div>
+<div class="prompt input_prompt">In&nbsp;[4]:</div>
 <div class="inner_cell">
-<div class="input_area">
+    <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="k">def</span> <span class="nf">straight_forward_map</span><span class="p">(</span><span class="n">obs_probabilities</span><span class="p">):</span>
-    <span class="sd">"""</span>
+    <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This inference models works completely in probability space: it computes the likelihood </span>
 <span class="sd">    of each class by simply multiplying the sequence of predicted probabilities, and normalize the result    </span>
-<span class="sd">    """</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     
     <span class="c1"># this very quickly underflows..</span>
     <span class="n">likelihoods</span> <span class="o">=</span> <span class="n">obs_probabilities</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
@@ -1187,13 +1199,13 @@ $$<p>Which is not prone to underflow as above. Converting that to a probability 
     
     
 <span class="k">def</span> <span class="nf">normalized_log_sum_map</span><span class="p">(</span><span class="n">obs_probabilities</span><span class="p">):</span>
-    <span class="sd">"""</span>
+    <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This inference models solves the first underflow error by summing up log-likelihoods. </span>
 <span class="sd">    </span>
 <span class="sd">    However, in order to normalize it into a probability vector, this implementation first </span>
 <span class="sd">    takes the exponential of the likelihood and normalizes the result, which also leads to </span>
 <span class="sd">    an underflow issue.</span>
-<span class="sd">    """</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">log_likelihoods</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">obs_probabilities</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 
@@ -1205,35 +1217,37 @@ $$<p>Which is not prone to underflow as above. Converting that to a probability 
 
 
 <span class="k">def</span> <span class="nf">normalized_log_space_map</span><span class="p">(</span><span class="n">obs_probabilities</span><span class="p">):</span>
-    <span class="sd">"""</span>
+    <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Finally, this inference models computes the probability vector by summing up the </span>
 <span class="sd">    log likelihoods, normalizing the result by substracting its log-sum-exp and only then </span>
 <span class="sd">    getting out of the log domain. </span>
-<span class="sd">    """</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">log_likelihoods</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">obs_probabilities</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
     <span class="n">log_probs</span> <span class="o">=</span> <span class="n">log_likelihoods</span> <span class="o">-</span> <span class="n">sc</span><span class="o">.</span><span class="n">misc</span><span class="o">.</span><span class="n">logsumexp</span><span class="p">(</span><span class="n">log_likelihoods</span><span class="p">)</span>
     <span class="n">probability</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">log_probs</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">map_predict</span><span class="p">(</span><span class="n">probability</span><span class="p">)</span>
 </pre></div>
+
 </div>
 </div>
 </div>
+
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In [5]:</div>
+<div class="prompt input_prompt">In&nbsp;[5]:</div>
 <div class="inner_cell">
-<div class="input_area">
+    <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="o">%%</span><span class="k">time</span>
 
 def run_experiment(test_size):
-    """
+    &quot;&quot;&quot;
     This experiment simply generates 100 (noisy) learning outcomes of various sizes
     and submit them to each of the 3 inference models above.
     
     The same set of data is every time submitted to each of the 3 models.
-    """
+    &quot;&quot;&quot;
     
     observations = make_up_some_observation_probs(test_size)
     
@@ -1243,17 +1257,21 @@ def run_experiment(test_size):
         normalized_log_space_map(observations)
     ]
 
-results = pd.DataFrame([["%05d observations" % test_size] + run_experiment(test_size)
+results = pd.DataFrame([[&quot;%05d observations&quot; % test_size] + run_experiment(test_size)
               for test_size in [10, 30, 50, 100, 150, 500, 1000, 5000, 10000]
               for _ in range(100)],
-               columns=["test_size", "m1", "m2", "m3"]
+               columns=[&quot;test_size&quot;, &quot;m1&quot;, &quot;m2&quot;, &quot;m3&quot;]
             )
 </pre></div>
+
 </div>
 </div>
 </div>
+
 <div class="output_wrapper">
 <div class="output">
+
+
 <div class="output_area"><div class="prompt"></div>
 <div class="output_subarea output_stream output_stdout output_text">
 <pre>CPU times: user 43.8 s, sys: 314 ms, total: 44.1 s
@@ -1261,80 +1279,99 @@ Wall time: 44 s
 </pre>
 </div>
 </div>
+
 </div>
 </div>
+
 </div>
 <div class="cell border-box-sizing text_cell rendered">
 <div class="prompt input_prompt">
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h1 id="Results">Results<a class="anchor-link" href="#Results">¶</a></h1>
+<h1 id="Results">Results<a class="anchor-link" href="#Results">&#182;</a></h1>
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In [7]:</div>
+<div class="prompt input_prompt">In&nbsp;[7]:</div>
 <div class="inner_cell">
-<div class="input_area">
+    <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="kn">import</span> <span class="nn">readline</span>
 
 <span class="o">%</span><span class="k">load_ext</span> rpy2.ipython
-<span class="o">%</span><span class="k">R</span> library("ggplot2")
+<span class="o">%</span><span class="k">R</span> library(&quot;ggplot2&quot;)
 </pre></div>
+
 </div>
 </div>
 </div>
+
 <div class="output_wrapper">
 <div class="output">
+
+
 <div class="output_area"><div class="prompt output_prompt">Out[7]:</div>
+
+
 <div class="output_text output_subarea output_execute_result">
-<pre>array(['ggplot2', 'tools', 'stats', 'graphics', 'grDevices', 'utils', 'datasets', 'methods', 'base'], 
-      dtype='|S9')</pre>
+<pre>array([&#39;ggplot2&#39;, &#39;tools&#39;, &#39;stats&#39;, &#39;graphics&#39;, &#39;grDevices&#39;, &#39;utils&#39;, &#39;datasets&#39;, &#39;methods&#39;, &#39;base&#39;], 
+      dtype=&#39;|S9&#39;)</pre>
+</div>
+
+</div>
+
 </div>
 </div>
-</div>
-</div>
+
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In [8]:</div>
+<div class="prompt input_prompt">In&nbsp;[8]:</div>
 <div class="inner_cell">
-<div class="input_area">
+    <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="n">results_named</span> <span class="o">=</span> <span class="n">results</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">"m1"</span><span class="p">:</span> <span class="s2">"straight_forward_map"</span><span class="p">,</span>
-        <span class="s2">"m2"</span><span class="p">:</span> <span class="s2">"normalized_log_sum_map"</span><span class="p">,</span>
-        <span class="s2">"m3"</span><span class="p">:</span> <span class="s2">"normalized_log_space_map"</span><span class="p">,</span>        
+        <span class="s2">&quot;m1&quot;</span><span class="p">:</span> <span class="s2">&quot;straight_forward_map&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;m2&quot;</span><span class="p">:</span> <span class="s2">&quot;normalized_log_sum_map&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;m3&quot;</span><span class="p">:</span> <span class="s2">&quot;normalized_log_space_map&quot;</span><span class="p">,</span>        
     <span class="p">})</span>
 
 
-<span class="n">results_m</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">melt</span><span class="p">(</span><span class="n">results_named</span><span class="p">,</span> <span class="n">id_vars</span><span class="o">=</span><span class="p">[</span><span class="s2">"test_size"</span><span class="p">],</span> <span class="n">var_name</span><span class="o">=</span><span class="s2">"method"</span><span class="p">,</span> <span class="n">value_name</span><span class="o">=</span><span class="s2">"predicted_class"</span><span class="p">)</span>
+<span class="n">results_m</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">melt</span><span class="p">(</span><span class="n">results_named</span><span class="p">,</span> <span class="n">id_vars</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;test_size&quot;</span><span class="p">],</span> <span class="n">var_name</span><span class="o">=</span><span class="s2">&quot;method&quot;</span><span class="p">,</span> <span class="n">value_name</span><span class="o">=</span><span class="s2">&quot;predicted_class&quot;</span><span class="p">)</span>
 </pre></div>
+
 </div>
 </div>
 </div>
+
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In [10]:</div>
+<div class="prompt input_prompt">In&nbsp;[10]:</div>
 <div class="inner_cell">
-<div class="input_area">
+    <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="o">%%</span>R <span class="o">-</span>i results_m <span class="o">--</span>width <span class="m">1000</span> <span class="o">--</span>height <span class="m">700</span>
 
-g <span class="o"><-</span> ggplot<span class="p">(</span>data<span class="o">=</span>results_m<span class="p">)</span>
-g <span class="o"><-</span> g <span class="o">+</span> geom_histogram<span class="p">(</span>aes<span class="p">(</span>x<span class="o">=</span>predicted_class<span class="p">,</span> fill<span class="o">=</span>method<span class="p">),</span> position<span class="o">=</span><span class="s">"dodge"</span><span class="p">)</span>
-g <span class="o"><-</span> g <span class="o">+</span> facet_wrap<span class="p">(</span><span class="o">~</span>test_size<span class="p">,</span> ncol<span class="o">=</span><span class="m">3</span><span class="p">)</span>
-g <span class="o"><-</span> g <span class="o">+</span> theme_bw<span class="p">(</span>base_size<span class="o">=</span><span class="m">18</span><span class="p">)</span>
+g <span class="o">&lt;-</span> ggplot<span class="p">(</span>data<span class="o">=</span>results_m<span class="p">)</span>
+g <span class="o">&lt;-</span> g <span class="o">+</span> geom_histogram<span class="p">(</span>aes<span class="p">(</span>x<span class="o">=</span>predicted_class<span class="p">,</span> fill<span class="o">=</span>method<span class="p">),</span> position<span class="o">=</span><span class="s">&quot;dodge&quot;</span><span class="p">)</span>
+g <span class="o">&lt;-</span> g <span class="o">+</span> facet_wrap<span class="p">(</span><span class="o">~</span>test_size<span class="p">,</span> ncol<span class="o">=</span><span class="m">3</span><span class="p">)</span>
+g <span class="o">&lt;-</span> g <span class="o">+</span> theme_bw<span class="p">(</span>base_size<span class="o">=</span><span class="m">18</span><span class="p">)</span>
 
 <span class="kp">print</span><span class="p">(</span>g<span class="p">)</span>
 </pre></div>
+
 </div>
 </div>
 </div>
+
 <div class="output_wrapper">
 <div class="output">
+
+
 <div class="output_area"><div class="prompt"></div>
+
+
 <div class="output_png output_subarea ">
 <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA+gAAAK8CAYAAAB8y5WxAAAD8GlDQ1BJQ0MgUHJvZmlsZQAAOI2N
 Vd1v21QUP4lvXKQWP6Cxjg4Vi69VU1u5GxqtxgZJk6XpQhq5zdgqpMl1bhpT1za2021Vn/YCbwz4
@@ -2532,10 +2569,13 @@ AoRZqyt10hkIQAACEIAABCAAAQhAAAIQSCoBDPSkag65IQABCEAAAhCAAAQgAAEIQKCuCGCg15U6
 6QwEIAABCEAAAhCAAAQgAAEIJJUABnpSNYfcEIAABCAAAQhAAAIQgAAEIFBXBDDQ60qddAYCEIAA
 BCAAAQhAAAIQgAAEkkrg/wAfhAQTieVlmwAAAABJRU5ErkJggg==
 ">
-</img></div>
+</div>
+
+</div>
+
 </div>
 </div>
-</div>
+
 </div>
 <div class="cell border-box-sizing text_cell rendered">
 <div class="prompt input_prompt">
@@ -2547,6 +2587,7 @@ BCAAAQhAAAIQgAAEkkrg/wAfhAQTieVlmwAAAABJRU5ErkJggg==
 <p>As the number of observations grows, variance decreases as expected and the true class gets predicted correctly most of the time.</p>
 <p>On all the histograms where the 3 models are present, they have exactly the same distribution, which strongly hints that they generate the same results. This is expected since, appart from the numerical computation issues, they are all mathematically equivalent.</p>
 <p>On the lower histograms, only the <code>normalize_log_space_map</code> algorithm, corresponding to the third algorithm above, is present: the other two models both already start to underflow for some classes and are unable to produce a result. With this particular set of parameter for my toy problem this occurs as soon as the dataset reaches 150 samples, which is fairly small. The third one by comparaison has no problem handling 10000 samples.</p>
+
 </div>
 </div>
 </div>

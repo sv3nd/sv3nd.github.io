@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Svend's blog</title><link href="https://svendx4f.github.io/" rel="alternate"></link><link href="https://svendx4f.github.io/feeds/all.atom.xml" rel="self"></link><id>https://svendx4f.github.io/</id><updated>2016-10-02T18:29:00+02:00</updated><entry><title>How to normalize log-likelihood vectors</title><link href="https://svendx4f.github.io/how-to-normalize-log-likelihood-vectors.html" rel="alternate"></link><published>2016-10-02T18:29:00+02:00</published><updated>2016-10-02T18:29:00+02:00</updated><author><name>Svend Vanderveken</name></author><id>tag:svendx4f.github.io,2016-10-02:how-to-normalize-log-likelihood-vectors.html</id><summary type="html">&lt;style type="text/css"&gt;/*!
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Svend's blog</title><link href="https://svendx4f.github.io/" rel="alternate"></link><link href="https://svendx4f.github.io/feeds/all.atom.xml" rel="self"></link><id>https://svendx4f.github.io/</id><updated>2016-10-18T14:22:00+02:00</updated><entry><title>Using model post-processor within scikit-learn pipelines</title><link href="https://svendx4f.github.io/using-model-post-processor-within-scikit-learn-pipelines.html" rel="alternate"></link><published>2016-10-18T14:22:00+02:00</published><updated>2016-10-18T14:22:00+02:00</updated><author><name>Svend Vanderveken</name></author><id>tag:svendx4f.github.io,2016-10-18:using-model-post-processor-within-scikit-learn-pipelines.html</id><summary type="html">&lt;style type="text/css"&gt;/*!
 *
 * IPython notebook
 *
@@ -976,9 +976,7 @@ h6:hover .anchor-link {
 &lt;/div&gt;
 &lt;div class="inner_cell"&gt;
 &lt;div class="text_cell_render border-box-sizing rendered_html"&gt;
-&lt;h1 id="How-to-normalize-log-likelihood-vectors"&gt;How to normalize log-likelihood vectors&lt;a class="anchor-link" href="#How-to-normalize-log-likelihood-vectors"&gt;¶&lt;/a&gt;&lt;/h1&gt;&lt;p&gt;What is the best way to convert a log-likelihood vector into the corresponding log-probability vector, i.e. a vector of values whose exponential sum up to one?&lt;/p&gt;
-&lt;p&gt;TLDR: just subtract the &lt;code&gt;scipy.misc.logsumexp()&lt;/code&gt; of that vector.&lt;/p&gt;
-&lt;p&gt;Note: this notebook is &lt;a href="https://github.com/svendx4f/svendx4f.github.io/blob/dev/content/how_to_normalize_likelihood_vectors.ipynb"&gt;available on Github&lt;/a&gt; in case you want to play around with it.&lt;/p&gt;
+&lt;h1 id="Using-model-post-processor-within-scikit-learn-pipelines"&gt;Using model post-processor within scikit-learn pipelines&lt;a class="anchor-link" href="#Using-model-post-processor-within-scikit-learn-pipelines"&gt;&amp;#182;&lt;/a&gt;&lt;/h1&gt;
 &lt;/div&gt;
 &lt;/div&gt;
 &lt;/div&gt;
@@ -987,7 +985,1335 @@ h6:hover .anchor-link {
 &lt;/div&gt;
 &lt;div class="inner_cell"&gt;
 &lt;div class="text_cell_render border-box-sizing rendered_html"&gt;
-&lt;h2 id="Usage-of-logs-in-probability-and-likelihood-computations"&gt;Usage of logs in probability and likelihood computations&lt;a class="anchor-link" href="#Usage-of-logs-in-probability-and-likelihood-computations"&gt;¶&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;Given a set of independent events $D= \{E_i\}$ with probabilities $\{p_i\}$, the probability of the joint occurance of all events in $D$ is simply&lt;/p&gt;
+&lt;h2 id="On-the-lack-of-post-processors"&gt;On the lack of post-processors&lt;a class="anchor-link" href="#On-the-lack-of-post-processors"&gt;&amp;#182;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;&lt;a href="http://scikit-learn.org/stable/modules/pipeline.html#pipeline"&gt;Pipelines&lt;/a&gt; are a very handy and central feature of the scikit-learn library that enable to chain sequences, or even, in a limited way, DAGs, of data transformers and one machine learning model. They greatly facilitate the application of cross-validation scoring or hyper-parameter search on the resulting pipeline as a whole. They also ease the productization of a machine learning exercise by providing one single encapsulated trained model that can be applied as one instance on a test set or integrated into a production product.&lt;/p&gt;
+&lt;p&gt;For a very clear introduction, see also the excellent &lt;a href="http://zacstewart.com/2014/08/05/pipelines-of-featureunions-of-pipelines.html"&gt;Using scikit-learn Pipelines and FeatureUnions&lt;/a&gt; blog post by Zac Stewart.&lt;/p&gt;
+
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="cell border-box-sizing text_cell rendered"&gt;
+&lt;div class="prompt input_prompt"&gt;
+&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+&lt;div class="text_cell_render border-box-sizing rendered_html"&gt;
+&lt;p&gt;The two aspects of the Pipeline architecture I want to focus on are:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;each element of the pipeline, except maybe the last one, must be &lt;em&gt;transformers&lt;/em&gt;, i.e. provide a &lt;code&gt;transform(X)&lt;/code&gt; method&lt;/li&gt;
+&lt;li&gt;the last element of a pipeline can either be a &lt;em&gt;transformer&lt;/em&gt;, in which case the result behaves like a grand-unified transformer, or a &lt;em&gt;predictor&lt;/em&gt;, i.e. a element providing a &lt;code&gt;predict()&lt;/code&gt; or &lt;code&gt;predict_proba()&lt;/code&gt; (this is a simplification, see the actual API for details). In the later case, the resulting pipeline behaves like a predictor, can be used for scoring and can be used in a cross-validation pipeline. &lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;img src="scikit-learn-pipeline-post-processing/sk_pipeline.png" alt=""&gt;&lt;/p&gt;
+&lt;p&gt;I am not knowledgeable about nor experienced with  the scikit-learn architecure to understand the rationale of this choice. My naive reaction is that the distinction between the three functions (&lt;code&gt;transform()&lt;/code&gt;, &lt;code&gt;predict()&lt;/code&gt;and &lt;code&gt;predict_proba()&lt;/code&gt; is of importance for other parts of the architecture, or present for historical reasons. My first apporach to this is that maybe just a single &lt;code&gt;transform()&lt;/code&gt; function would have been enough and allows more composition flexibility.&lt;/p&gt;
+
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="cell border-box-sizing text_cell rendered"&gt;
+&lt;div class="prompt input_prompt"&gt;
+&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+&lt;div class="text_cell_render border-box-sizing rendered_html"&gt;
+&lt;p&gt;A restriction inherent to this design is the difficulty to place transformer &lt;em&gt;after&lt;/em&gt; the model. I can think however of several cases where that would come in handy:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;To force a prediction to be within a known validity domain. For example, in &lt;a href="https://www.kaggle.com/c/bike-sharing-demand"&gt;this Kaggle tutorial&lt;/a&gt;, the output of the model is a count of bike usage events, so it must be integer and non-negative. If I use a model that does not guarantee that (say, a simple linear model), I'd like to be able to pipe the result into a transformer &lt;em&gt;before&lt;/em&gt; scoring the result.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Another (rather theoretical) example is simple composed models, like logistic regression, which stricto-senso is a learning model piped into a sigmoid transformer.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;img src="scikit-learn-pipeline-post-processing/lin_reg.png" alt=""&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Finall, model calibration techniques, like adjusting predicted probability to actually observed proportion within a validation set, could be implemented as post-processors.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="cell border-box-sizing text_cell rendered"&gt;
+&lt;div class="prompt input_prompt"&gt;
+&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+&lt;div class="text_cell_render border-box-sizing rendered_html"&gt;
+&lt;h2 id="Existing-workarounds"&gt;Existing workarounds&lt;a class="anchor-link" href="#Existing-workarounds"&gt;&amp;#182;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;Before introducing the simple wrappers I coded below, let's clarify that those "limitation" are not a showstopper.&lt;/p&gt;
+&lt;p&gt;In the Kaggle example I gave above, an easy workaround consists in writting a custom scoring method that post-processes the model output before actually scoring it. This enables to have a correct score in each fold of the cross-validation loop:&lt;/p&gt;
+&lt;p&gt;&lt;img src="scikit-learn-pipeline-post-processing/sk_cross_val.png" alt=""&gt;&lt;/p&gt;
+&lt;p&gt;In the case of logistic regression, &lt;a href="http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html"&gt;Scikit-learn is of course providing an implementation that includes the sigmoid as art of the model itself&lt;/a&gt;, this is working perfectly fine and poses no issues. My only point here is that if one was to re-implement a logistic regression algorithm today, this person would not be able to break it down as a several steps of a scikit-learn pipeline.&lt;/p&gt;
+&lt;p&gt;&lt;img src="scikit-learn-pipeline-post-processing/sk_lin_reg_pipe.png" alt=""&gt;&lt;/p&gt;
+&lt;p&gt;In both cases, in term of software design we can see that the concept of transformation &lt;em&gt;leaks&lt;/em&gt; from the transformer itself to the nearest adjacent elements in the pipeline, either the scoring method or the model itself.&lt;/p&gt;
+
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="cell border-box-sizing text_cell rendered"&gt;
+&lt;div class="prompt input_prompt"&gt;
+&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+&lt;div class="text_cell_render border-box-sizing rendered_html"&gt;
+&lt;h2 id="Allowing-models-anywhere-in-the-pipeline"&gt;Allowing models anywhere in the pipeline&lt;a class="anchor-link" href="#Allowing-models-anywhere-in-the-pipeline"&gt;&amp;#182;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;A more general solution is to wrap the model such that it behaves like a tranformer. I'm not the author of this idea, some places where it has been hinted before are &lt;a href="https://github.com/scikit-learn/scikit-learn/issues/4143"&gt;here&lt;/a&gt; and &lt;a href="https://github.com/scikit-learn/scikit-learn/pull/4552"&gt;here&lt;/a&gt;, among others.&lt;/p&gt;
+&lt;p&gt;The class below achieves that very simply, by re-routing calls to &lt;code&gt;transform&lt;/code&gt; to the underlying pipeline &lt;code&gt;predict()&lt;/code&gt;:&lt;/p&gt;
+
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="cell border-box-sizing code_cell rendered"&gt;
+&lt;div class="input"&gt;
+&lt;div class="prompt input_prompt"&gt;In&amp;nbsp;[&amp;nbsp;]:&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+    &lt;div class="input_area"&gt;
+&lt;div class=" highlight hl-ipython2"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;sklearn.pipeline&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;Pipeline&lt;/span&gt;
+
+&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;TransformingPredictorPipeline&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Pipeline&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="sd"&gt;&amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;
+&lt;span class="sd"&gt;    This allows to convert a predicting pipeline into a transforming pipeline.     &lt;/span&gt;
+
+&lt;span class="sd"&gt;    This seemed to work when I tested it on scikit-learn 0.18, but you&amp;#39;d rather not believe me.&lt;/span&gt;
+&lt;span class="sd"&gt;    &amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;
+    
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;__init__&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;steps&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="n"&gt;Pipeline&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__init__&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;steps&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;transform&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;X&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;predict&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;X&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;    
+    
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;fit_transform&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;X&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;y&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;**&lt;/span&gt;&lt;span class="n"&gt;fit_params&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;fit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;X&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;y&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;**&lt;/span&gt;&lt;span class="n"&gt;fit_params&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;predict&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;X&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;/div&gt;
+&lt;div class="cell border-box-sizing text_cell rendered"&gt;
+&lt;div class="prompt input_prompt"&gt;
+&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+&lt;div class="text_cell_render border-box-sizing rendered_html"&gt;
+&lt;p&gt;The converse transformation is also required: once we have transformed our prediction model into a transformer and appended some post-processor, we end up with a transformer pipeline. What we want though is a predicting pipeline, with a  &lt;code&gt;predict()&lt;/code&gt; method, so that we can use it with a scoring method within a cross-validation loop.&lt;/p&gt;
+
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="cell border-box-sizing code_cell rendered"&gt;
+&lt;div class="input"&gt;
+&lt;div class="prompt input_prompt"&gt;In&amp;nbsp;[&amp;nbsp;]:&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+    &lt;div class="input_area"&gt;
+&lt;div class=" highlight hl-ipython2"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;sklearn.pipeline&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;Pipeline&lt;/span&gt;
+
+&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;PredictingTransformerPipeline&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Pipeline&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="sd"&gt;&amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;
+&lt;span class="sd"&gt;    This is the reverse conversion of the above: we transform a transforming pipeline &lt;/span&gt;
+&lt;span class="sd"&gt;    into a predicting pipeline.     &lt;/span&gt;
+&lt;span class="sd"&gt;    &lt;/span&gt;
+&lt;span class="sd"&gt;    This seemed to work when I tested it on scikit-learn 0.18, but you&amp;#39;d rather not believe me.&lt;/span&gt;
+&lt;span class="sd"&gt;    &amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;
+    
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;__init__&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;steps&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="n"&gt;Pipeline&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__init__&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;steps&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;predict&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;X&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;transform&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;X&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;fit_predict&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;X&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;y&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;**&lt;/span&gt;&lt;span class="n"&gt;fit_params&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;fit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;X&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;y&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;**&lt;/span&gt;&lt;span class="n"&gt;fit_params&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;transform&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;X&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;    
+&lt;/pre&gt;&lt;/div&gt;
+
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;/div&gt;
+&lt;div class="cell border-box-sizing text_cell rendered"&gt;
+&lt;div class="prompt input_prompt"&gt;
+&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+&lt;div class="text_cell_render border-box-sizing rendered_html"&gt;
+&lt;p&gt;I realize those are quite invaluable snippets of code (ahem...), so not only am I blogging about them but also pushing them to my &lt;a href="https://github.com/svendx4f/datatoolkit"&gt;data toolkit on github&lt;/a&gt;.&lt;/p&gt;
+
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="cell border-box-sizing text_cell rendered"&gt;
+&lt;div class="prompt input_prompt"&gt;
+&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+&lt;div class="text_cell_render border-box-sizing rendered_html"&gt;
+&lt;h1 id="Example"&gt;Example&lt;a class="anchor-link" href="#Example"&gt;&amp;#182;&lt;/a&gt;&lt;/h1&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="cell border-box-sizing text_cell rendered"&gt;
+&lt;div class="prompt input_prompt"&gt;
+&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+&lt;div class="text_cell_render border-box-sizing rendered_html"&gt;
+&lt;p&gt;Using the Kaggle tutorial example mentioned above, let's use a simple linear model to predict the event counts. An obvious issue is that the raw model outputs will be real values with no guarantee of being positive.&lt;/p&gt;
+&lt;p&gt;A set of simple transformers to fix that are quickly written:&lt;/p&gt;
+
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="cell border-box-sizing code_cell rendered"&gt;
+&lt;div class="input"&gt;
+&lt;div class="prompt input_prompt"&gt;In&amp;nbsp;[&amp;nbsp;]:&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+    &lt;div class="input_area"&gt;
+&lt;div class=" highlight hl-ipython2"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;sys&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;numpy&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;np&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;sklearn.base&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;TransformerMixin&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;BaseEstimator&lt;/span&gt;
+    
+&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;NonNegativeTransformer&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;TransformerMixin&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;BaseEstimator&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;transform&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;X&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;y&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="sd"&gt;&amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;
+&lt;span class="sd"&gt;        Replaces any negative value with its closest known valid value: 0&lt;/span&gt;
+&lt;span class="sd"&gt;        &amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;        
+        
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;clip&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;X&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;a_min&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;a_max&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;sys&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;maxint&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; 
+
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;fit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;X&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;y&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;  
+        
+        
+&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;AsIntegerTransformer&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;TransformerMixin&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;BaseEstimator&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;transform&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;X&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;y&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="sd"&gt;&amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;
+&lt;span class="sd"&gt;        Replaces any non integer value with its closest known valid value&lt;/span&gt;
+&lt;span class="sd"&gt;        &amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;
+        
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;round&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;X&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;astype&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;int&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;        
+
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;fit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;X&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;y&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;  
+    
+&lt;/pre&gt;&lt;/div&gt;
+
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;/div&gt;
+&lt;div class="cell border-box-sizing text_cell rendered"&gt;
+&lt;div class="prompt input_prompt"&gt;
+&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+&lt;div class="text_cell_render border-box-sizing rendered_html"&gt;
+&lt;p&gt;This allows write a pipeline as follows (I like to tell myself that this is very readable):&lt;/p&gt;
+
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="cell border-box-sizing code_cell rendered"&gt;
+&lt;div class="input"&gt;
+&lt;div class="prompt input_prompt"&gt;In&amp;nbsp;[&amp;nbsp;]:&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+    &lt;div class="input_area"&gt;
+&lt;div class=" highlight hl-ipython2"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;sklearn.preprocessing&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;StandardScaler&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;sklearn.pipeline&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;Pipeline&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;FeatureUnion&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;sklearn.decomposition&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;PCA&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;sklearn.linear_model&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;ElasticNet&lt;/span&gt;
+
+&lt;span class="c1"&gt;# name of one-hot encoded nominal features&lt;/span&gt;
+&lt;span class="n"&gt;nominal_enc_features&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;
+    &lt;span class="s2"&gt;&amp;quot;season_fall&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;season_spring&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;season_summer&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;season_winter&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; 
+    &lt;span class="s2"&gt;&amp;quot;weather_clear&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;weather_cloudy&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;weather_misty&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+
+&lt;span class="c1"&gt;# name of numerical features&lt;/span&gt;
+&lt;span class="n"&gt;num_features&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;temp&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;humidity&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;windspeed&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;hourly_dist&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+
+&lt;span class="n"&gt;the_pipe&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;PredictingTransformerPipeline&lt;/span&gt;&lt;span class="p"&gt;([&lt;/span&gt;
+        &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;main_learning_pp&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;TransformingPredictorPipeline&lt;/span&gt;&lt;span class="p"&gt;([&lt;/span&gt;
+          &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;1d-pre-process&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;FeatureUnion&lt;/span&gt;&lt;span class="p"&gt;([&lt;/span&gt;
+            &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;nominal_feat_passthrough&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;Columns_Selector&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;nominal_enc_features&lt;/span&gt;&lt;span class="p"&gt;)),&lt;/span&gt; 
+            &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;numerical_feat_encoding&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;Pipeline&lt;/span&gt;&lt;span class="p"&gt;([&lt;/span&gt;
+              &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;num_cols&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;Columns_Selector&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;num_features&lt;/span&gt;&lt;span class="p"&gt;)),&lt;/span&gt;
+              &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;scaler&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;StandardScaler&lt;/span&gt;&lt;span class="p"&gt;())])&lt;/span&gt;
+            &lt;span class="p"&gt;)])&lt;/span&gt;
+          &lt;span class="p"&gt;),&lt;/span&gt;
+          &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;pca&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;PCA&lt;/span&gt;&lt;span class="p"&gt;()),&lt;/span&gt; 
+          &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;lr&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;ElasticNet&lt;/span&gt;&lt;span class="p"&gt;())])&lt;/span&gt;
+       &lt;span class="p"&gt;),&lt;/span&gt;
+      &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;to_integer&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;AsIntegerTransformer&lt;/span&gt;&lt;span class="p"&gt;()),&lt;/span&gt;
+      &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;to_non_negative&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;NonNegativeTransformer&lt;/span&gt;&lt;span class="p"&gt;()),&lt;/span&gt;
+    &lt;span class="p"&gt;])&lt;/span&gt;        
+&lt;/pre&gt;&lt;/div&gt;
+
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;/div&gt;
+&lt;div class="cell border-box-sizing text_cell rendered"&gt;
+&lt;div class="prompt input_prompt"&gt;
+&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+&lt;div class="text_cell_render border-box-sizing rendered_html"&gt;
+&lt;p&gt;&lt;code&gt;main_learning_pp&lt;/code&gt; is really just a very basic pipeline, with one &lt;code&gt;1d-pre-proces&lt;/code&gt; step to scale numerical features, one PCA dimensionality reduction, and finaly one lineare model. As discussed above, I wrap this into a &lt;code&gt;TransformingPredictorPipeline&lt;/code&gt; in order to make it behave like a transformer.&lt;/p&gt;
+&lt;p&gt;The main point of this example is what comes next: we can now place the two supplementary post-processors as promised: &lt;code&gt;to_integer&lt;/code&gt; and &lt;code&gt;to_non_negative&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Finaly, in order to be able to score this as part of a cross-validation loop, we need this to behave like predictor, so we wrap it again, this time within &lt;code&gt;TransformingPredictorPipeline&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;img src="scikit-learn-pipeline-post-processing/final_pipeline.png" alt=""&gt;&lt;/p&gt;
+&lt;p&gt;An example usage is provided below:&lt;/p&gt;
+
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="cell border-box-sizing code_cell rendered"&gt;
+&lt;div class="input"&gt;
+&lt;div class="prompt input_prompt"&gt;In&amp;nbsp;[&amp;nbsp;]:&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+    &lt;div class="input_area"&gt;
+&lt;div class=" highlight hl-ipython2"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;sklearn.model_selection&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;GridSearchCV&lt;/span&gt;
+
+&lt;span class="n"&gt;param_grid&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;
+    &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;main_learning_pp__pca__n_components&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt; &lt;span class="mi"&gt;4&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;5&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt;
+     &lt;span class="s2"&gt;&amp;quot;main_learning_pp__lr__l1_ratio&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt; &lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="mi"&gt;5&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;  &lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="mi"&gt;85&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="mi"&gt;9&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="mi"&gt;95&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt;
+     &lt;span class="s2"&gt;&amp;quot;main_learning_pp__lr__max_iter&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;500&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt;
+     &lt;span class="s2"&gt;&amp;quot;main_learning_pp__lr__alpha&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt; &lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="mi"&gt;5&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="mi"&gt;75&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+    &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;span class="p"&gt;]&lt;/span&gt;
+
+&lt;span class="n"&gt;gs&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;GridSearchCV&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;estimator&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;the_pipe&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+                  &lt;span class="n"&gt;param_grid&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;param_grid&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; 
+                  &lt;span class="n"&gt;scoring&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;neg_rmsle_score&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; 
+                  &lt;span class="n"&gt;cv&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;10&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; 
+                  &lt;span class="n"&gt;n_jobs&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="n"&gt;fitted_reg_model&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;gs&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;fit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;X&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;reg_data_X_train&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;y&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;reg_data_Y_train&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;values&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;/div&gt;
+&lt;div class="cell border-box-sizing text_cell rendered"&gt;
+&lt;div class="prompt input_prompt"&gt;
+&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+&lt;div class="text_cell_render border-box-sizing rendered_html"&gt;
+&lt;h1 id="Conclusion"&gt;Conclusion&lt;a class="anchor-link" href="#Conclusion"&gt;&amp;#182;&lt;/a&gt;&lt;/h1&gt;&lt;p&gt;I find that removing the distinction between &lt;code&gt;transform()&lt;/code&gt;, &lt;code&gt;predict()&lt;/code&gt; and &lt;code&gt;predict_proba()&lt;/code&gt; and letting everything behave like a transformer adds a lot of flexibility to the pipelines.&lt;/p&gt;
+&lt;p&gt;One direction I have note explored here is to use &lt;em&gt;several models&lt;/em&gt; in the pipeline, combining them with &lt;a href="http://scikit-learn.org/stable/modules/generated/sklearn.pipeline.FeatureUnion.html#sklearn.pipeline.FeatureUnion"&gt;FeatureUnion&lt;/a&gt; could easily let us designed &lt;a href="http://docs.rapidminer.com/studio/operators/modeling/predictive/ensembles/stacking.html"&gt;stacked ensembles&lt;/a&gt; directly as scikit-learn pipelines! Given that stacking potentially augments tremendously the number of degrees of freedom of a model, it's very prone to overfitting, so it might be positive to be able to tune them as a whole, e.g. in a scikit-learn cross-validation loop. Now there is, of course, an obvious computational cost to that approach. To be digged later...&lt;/p&gt;
+
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;script type="text/javascript"&gt;if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var mathjaxscript = document.createElement('script');
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript';
+    mathjaxscript.src = '//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: 'center'," +
+        "    displayIndent: '0em'," +
+        "    showMathMenu: true," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['$','$'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'black ! important'} }" +
+        "    } " +
+        "}); ";
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+&lt;/script&gt;
+</summary><category term="scikit-learn"></category><category term="machine-learning"></category></entry><entry><title>How to normalize log-likelihood vectors</title><link href="https://svendx4f.github.io/how-to-normalize-log-likelihood-vectors.html" rel="alternate"></link><published>2016-10-02T18:29:00+02:00</published><updated>2016-10-02T18:29:00+02:00</updated><author><name>Svend Vanderveken</name></author><id>tag:svendx4f.github.io,2016-10-02:how-to-normalize-log-likelihood-vectors.html</id><summary type="html">&lt;style type="text/css"&gt;/*!
+*
+* IPython notebook
+*
+*/
+/* CSS font colors for translated ANSI colors. */
+.ansibold {
+  font-weight: bold;
+}
+/* use dark versions for foreground, to improve visibility */
+.ansiblack {
+  color: black;
+}
+.ansired {
+  color: darkred;
+}
+.ansigreen {
+  color: darkgreen;
+}
+.ansiyellow {
+  color: #c4a000;
+}
+.ansiblue {
+  color: darkblue;
+}
+.ansipurple {
+  color: darkviolet;
+}
+.ansicyan {
+  color: steelblue;
+}
+.ansigray {
+  color: gray;
+}
+/* and light for background, for the same reason */
+.ansibgblack {
+  background-color: black;
+}
+.ansibgred {
+  background-color: red;
+}
+.ansibggreen {
+  background-color: green;
+}
+.ansibgyellow {
+  background-color: yellow;
+}
+.ansibgblue {
+  background-color: blue;
+}
+.ansibgpurple {
+  background-color: magenta;
+}
+.ansibgcyan {
+  background-color: cyan;
+}
+.ansibggray {
+  background-color: gray;
+}
+div.cell {
+  /* Old browsers */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-box-align: stretch;
+  display: -moz-box;
+  -moz-box-orient: vertical;
+  -moz-box-align: stretch;
+  display: box;
+  box-orient: vertical;
+  box-align: stretch;
+  /* Modern browsers */
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  border-radius: 2px;
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  border-width: 1px;
+  border-style: solid;
+  border-color: transparent;
+  width: 100%;
+  padding: 5px;
+  /* This acts as a spacer between cells, that is outside the border */
+  margin: 0px;
+  outline: none;
+  border-left-width: 1px;
+  padding-left: 5px;
+  background: linear-gradient(to right, transparent -40px, transparent 1px, transparent 1px, transparent 100%);
+}
+div.cell.jupyter-soft-selected {
+  border-left-color: #90CAF9;
+  border-left-color: #E3F2FD;
+  border-left-width: 1px;
+  padding-left: 5px;
+  border-right-color: #E3F2FD;
+  border-right-width: 1px;
+  background: #E3F2FD;
+}
+@media print {
+  div.cell.jupyter-soft-selected {
+    border-color: transparent;
+  }
+}
+div.cell.selected {
+  border-color: #ababab;
+  border-left-width: 0px;
+  padding-left: 6px;
+  background: linear-gradient(to right, #42A5F5 -40px, #42A5F5 5px, transparent 5px, transparent 100%);
+}
+@media print {
+  div.cell.selected {
+    border-color: transparent;
+  }
+}
+div.cell.selected.jupyter-soft-selected {
+  border-left-width: 0;
+  padding-left: 6px;
+  background: linear-gradient(to right, #42A5F5 -40px, #42A5F5 7px, #E3F2FD 7px, #E3F2FD 100%);
+}
+.edit_mode div.cell.selected {
+  border-color: #66BB6A;
+  border-left-width: 0px;
+  padding-left: 6px;
+  background: linear-gradient(to right, #66BB6A -40px, #66BB6A 5px, transparent 5px, transparent 100%);
+}
+@media print {
+  .edit_mode div.cell.selected {
+    border-color: transparent;
+  }
+}
+.prompt {
+  /* This needs to be wide enough for 3 digit prompt numbers: In[100]: */
+  min-width: 14ex;
+  /* This padding is tuned to match the padding on the CodeMirror editor. */
+  padding: 0.4em;
+  margin: 0px;
+  font-family: monospace;
+  text-align: right;
+  /* This has to match that of the the CodeMirror class line-height below */
+  line-height: 1.21429em;
+  /* Don't highlight prompt number selection */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  /* Use default cursor */
+  cursor: default;
+}
+@media (max-width: 540px) {
+  .prompt {
+    text-align: left;
+  }
+}
+div.inner_cell {
+  /* Old browsers */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-box-align: stretch;
+  display: -moz-box;
+  -moz-box-orient: vertical;
+  -moz-box-align: stretch;
+  display: box;
+  box-orient: vertical;
+  box-align: stretch;
+  /* Modern browsers */
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  /* Old browsers */
+  -webkit-box-flex: 1;
+  -moz-box-flex: 1;
+  box-flex: 1;
+  /* Modern browsers */
+  flex: 1;
+}
+@-moz-document url-prefix() {
+  div.inner_cell {
+    overflow-x: hidden;
+  }
+}
+/* input_area and input_prompt must match in top border and margin for alignment */
+div.input_area {
+  border: 1px solid #cfcfcf;
+  border-radius: 2px;
+  background: #f7f7f7;
+  line-height: 1.21429em;
+}
+/* This is needed so that empty prompt areas can collapse to zero height when there
+   is no content in the output_subarea and the prompt. The main purpose of this is
+   to make sure that empty JavaScript output_subareas have no height. */
+div.prompt:empty {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+div.unrecognized_cell {
+  padding: 5px 5px 5px 0px;
+  /* Old browsers */
+  display: -webkit-box;
+  -webkit-box-orient: horizontal;
+  -webkit-box-align: stretch;
+  display: -moz-box;
+  -moz-box-orient: horizontal;
+  -moz-box-align: stretch;
+  display: box;
+  box-orient: horizontal;
+  box-align: stretch;
+  /* Modern browsers */
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+}
+div.unrecognized_cell .inner_cell {
+  border-radius: 2px;
+  padding: 5px;
+  font-weight: bold;
+  color: red;
+  border: 1px solid #cfcfcf;
+  background: #eaeaea;
+}
+div.unrecognized_cell .inner_cell a {
+  color: inherit;
+  text-decoration: none;
+}
+div.unrecognized_cell .inner_cell a:hover {
+  color: inherit;
+  text-decoration: none;
+}
+@media (max-width: 540px) {
+  div.unrecognized_cell &gt; div.prompt {
+    display: none;
+  }
+}
+div.code_cell {
+  /* avoid page breaking on code cells when printing */
+}
+@media print {
+  div.code_cell {
+    page-break-inside: avoid;
+  }
+}
+/* any special styling for code cells that are currently running goes here */
+div.input {
+  page-break-inside: avoid;
+  /* Old browsers */
+  display: -webkit-box;
+  -webkit-box-orient: horizontal;
+  -webkit-box-align: stretch;
+  display: -moz-box;
+  -moz-box-orient: horizontal;
+  -moz-box-align: stretch;
+  display: box;
+  box-orient: horizontal;
+  box-align: stretch;
+  /* Modern browsers */
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+}
+@media (max-width: 540px) {
+  div.input {
+    /* Old browsers */
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-box-align: stretch;
+    display: -moz-box;
+    -moz-box-orient: vertical;
+    -moz-box-align: stretch;
+    display: box;
+    box-orient: vertical;
+    box-align: stretch;
+    /* Modern browsers */
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+/* input_area and input_prompt must match in top border and margin for alignment */
+div.input_prompt {
+  color: #303F9F;
+  border-top: 1px solid transparent;
+}
+div.input_area &gt; div.highlight {
+  margin: 0.4em;
+  border: none;
+  padding: 0px;
+  background-color: transparent;
+}
+div.input_area &gt; div.highlight &gt; pre {
+  margin: 0px;
+  border: none;
+  padding: 0px;
+  background-color: transparent;
+}
+/* The following gets added to the &lt;head&gt; if it is detected that the user has a
+ * monospace font with inconsistent normal/bold/italic height.  See
+ * notebookmain.js.  Such fonts will have keywords vertically offset with
+ * respect to the rest of the text.  The user should select a better font.
+ * See: https://github.com/ipython/ipython/issues/1503
+ *
+ * .CodeMirror span {
+ *      vertical-align: bottom;
+ * }
+ */
+.CodeMirror {
+  line-height: 1.21429em;
+  /* Changed from 1em to our global default */
+  font-size: 14px;
+  height: auto;
+  /* Changed to auto to autogrow */
+  background: none;
+  /* Changed from white to allow our bg to show through */
+}
+.CodeMirror-scroll {
+  /*  The CodeMirror docs are a bit fuzzy on if overflow-y should be hidden or visible.*/
+  /*  We have found that if it is visible, vertical scrollbars appear with font size changes.*/
+  overflow-y: hidden;
+  overflow-x: auto;
+}
+.CodeMirror-lines {
+  /* In CM2, this used to be 0.4em, but in CM3 it went to 4px. We need the em value because */
+  /* we have set a different line-height and want this to scale with that. */
+  padding: 0.4em;
+}
+.CodeMirror-linenumber {
+  padding: 0 8px 0 4px;
+}
+.CodeMirror-gutters {
+  border-bottom-left-radius: 2px;
+  border-top-left-radius: 2px;
+}
+.CodeMirror pre {
+  /* In CM3 this went to 4px from 0 in CM2. We need the 0 value because of how we size */
+  /* .CodeMirror-lines */
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+}
+/*
+
+Original style from softwaremaniacs.org (c) Ivan Sagalaev &lt;Maniac@SoftwareManiacs.Org&gt;
+Adapted from GitHub theme
+
+*/
+.highlight-base {
+  color: #000;
+}
+.highlight-variable {
+  color: #000;
+}
+.highlight-variable-2 {
+  color: #1a1a1a;
+}
+.highlight-variable-3 {
+  color: #333333;
+}
+.highlight-string {
+  color: #BA2121;
+}
+.highlight-comment {
+  color: #408080;
+  font-style: italic;
+}
+.highlight-number {
+  color: #080;
+}
+.highlight-atom {
+  color: #88F;
+}
+.highlight-keyword {
+  color: #008000;
+  font-weight: bold;
+}
+.highlight-builtin {
+  color: #008000;
+}
+.highlight-error {
+  color: #f00;
+}
+.highlight-operator {
+  color: #AA22FF;
+  font-weight: bold;
+}
+.highlight-meta {
+  color: #AA22FF;
+}
+/* previously not defined, copying from default codemirror */
+.highlight-def {
+  color: #00f;
+}
+.highlight-string-2 {
+  color: #f50;
+}
+.highlight-qualifier {
+  color: #555;
+}
+.highlight-bracket {
+  color: #997;
+}
+.highlight-tag {
+  color: #170;
+}
+.highlight-attribute {
+  color: #00c;
+}
+.highlight-header {
+  color: blue;
+}
+.highlight-quote {
+  color: #090;
+}
+.highlight-link {
+  color: #00c;
+}
+/* apply the same style to codemirror */
+.cm-s-ipython span.cm-keyword {
+  color: #008000;
+  font-weight: bold;
+}
+.cm-s-ipython span.cm-atom {
+  color: #88F;
+}
+.cm-s-ipython span.cm-number {
+  color: #080;
+}
+.cm-s-ipython span.cm-def {
+  color: #00f;
+}
+.cm-s-ipython span.cm-variable {
+  color: #000;
+}
+.cm-s-ipython span.cm-operator {
+  color: #AA22FF;
+  font-weight: bold;
+}
+.cm-s-ipython span.cm-variable-2 {
+  color: #1a1a1a;
+}
+.cm-s-ipython span.cm-variable-3 {
+  color: #333333;
+}
+.cm-s-ipython span.cm-comment {
+  color: #408080;
+  font-style: italic;
+}
+.cm-s-ipython span.cm-string {
+  color: #BA2121;
+}
+.cm-s-ipython span.cm-string-2 {
+  color: #f50;
+}
+.cm-s-ipython span.cm-meta {
+  color: #AA22FF;
+}
+.cm-s-ipython span.cm-qualifier {
+  color: #555;
+}
+.cm-s-ipython span.cm-builtin {
+  color: #008000;
+}
+.cm-s-ipython span.cm-bracket {
+  color: #997;
+}
+.cm-s-ipython span.cm-tag {
+  color: #170;
+}
+.cm-s-ipython span.cm-attribute {
+  color: #00c;
+}
+.cm-s-ipython span.cm-header {
+  color: blue;
+}
+.cm-s-ipython span.cm-quote {
+  color: #090;
+}
+.cm-s-ipython span.cm-link {
+  color: #00c;
+}
+.cm-s-ipython span.cm-error {
+  color: #f00;
+}
+.cm-s-ipython span.cm-tab {
+  background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAMCAYAAAAkuj5RAAAAAXNSR0IArs4c6QAAAGFJREFUSMft1LsRQFAQheHPowAKoACx3IgEKtaEHujDjORSgWTH/ZOdnZOcM/sgk/kFFWY0qV8foQwS4MKBCS3qR6ixBJvElOobYAtivseIE120FaowJPN75GMu8j/LfMwNjh4HUpwg4LUAAAAASUVORK5CYII=);
+  background-position: right;
+  background-repeat: no-repeat;
+}
+div.output_wrapper {
+  /* this position must be relative to enable descendents to be absolute within it */
+  position: relative;
+  /* Old browsers */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-box-align: stretch;
+  display: -moz-box;
+  -moz-box-orient: vertical;
+  -moz-box-align: stretch;
+  display: box;
+  box-orient: vertical;
+  box-align: stretch;
+  /* Modern browsers */
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  z-index: 1;
+}
+/* class for the output area when it should be height-limited */
+div.output_scroll {
+  /* ideally, this would be max-height, but FF barfs all over that */
+  height: 24em;
+  /* FF needs this *and the wrapper* to specify full width, or it will shrinkwrap */
+  width: 100%;
+  overflow: auto;
+  border-radius: 2px;
+  -webkit-box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.8);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.8);
+  display: block;
+}
+/* output div while it is collapsed */
+div.output_collapsed {
+  margin: 0px;
+  padding: 0px;
+  /* Old browsers */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-box-align: stretch;
+  display: -moz-box;
+  -moz-box-orient: vertical;
+  -moz-box-align: stretch;
+  display: box;
+  box-orient: vertical;
+  box-align: stretch;
+  /* Modern browsers */
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+div.out_prompt_overlay {
+  height: 100%;
+  padding: 0px 0.4em;
+  position: absolute;
+  border-radius: 2px;
+}
+div.out_prompt_overlay:hover {
+  /* use inner shadow to get border that is computed the same on WebKit/FF */
+  -webkit-box-shadow: inset 0 0 1px #000;
+  box-shadow: inset 0 0 1px #000;
+  background: rgba(240, 240, 240, 0.5);
+}
+div.output_prompt {
+  color: #D84315;
+}
+/* This class is the outer container of all output sections. */
+div.output_area {
+  padding: 0px;
+  page-break-inside: avoid;
+  /* Old browsers */
+  display: -webkit-box;
+  -webkit-box-orient: horizontal;
+  -webkit-box-align: stretch;
+  display: -moz-box;
+  -moz-box-orient: horizontal;
+  -moz-box-align: stretch;
+  display: box;
+  box-orient: horizontal;
+  box-align: stretch;
+  /* Modern browsers */
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+}
+div.output_area .MathJax_Display {
+  text-align: left !important;
+}
+div.output_area 
+div.output_area 
+div.output_area img,
+div.output_area svg {
+  max-width: 100%;
+  height: auto;
+}
+div.output_area img.unconfined,
+div.output_area svg.unconfined {
+  max-width: none;
+}
+/* This is needed to protect the pre formating from global settings such
+   as that of bootstrap */
+.output {
+  /* Old browsers */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-box-align: stretch;
+  display: -moz-box;
+  -moz-box-orient: vertical;
+  -moz-box-align: stretch;
+  display: box;
+  box-orient: vertical;
+  box-align: stretch;
+  /* Modern browsers */
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+@media (max-width: 540px) {
+  div.output_area {
+    /* Old browsers */
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-box-align: stretch;
+    display: -moz-box;
+    -moz-box-orient: vertical;
+    -moz-box-align: stretch;
+    display: box;
+    box-orient: vertical;
+    box-align: stretch;
+    /* Modern browsers */
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+div.output_area pre {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  vertical-align: baseline;
+  color: black;
+  background-color: transparent;
+  border-radius: 0;
+}
+/* This class is for the output subarea inside the output_area and after
+   the prompt div. */
+div.output_subarea {
+  overflow-x: auto;
+  padding: 0.4em;
+  /* Old browsers */
+  -webkit-box-flex: 1;
+  -moz-box-flex: 1;
+  box-flex: 1;
+  /* Modern browsers */
+  flex: 1;
+  max-width: calc(100% - 14ex);
+}
+div.output_scroll div.output_subarea {
+  overflow-x: visible;
+}
+/* The rest of the output_* classes are for special styling of the different
+   output types */
+/* all text output has this class: */
+div.output_text {
+  text-align: left;
+  color: #000;
+  /* This has to match that of the the CodeMirror class line-height below */
+  line-height: 1.21429em;
+}
+/* stdout/stderr are 'text' as well as 'stream', but execute_result/error are *not* streams */
+div.output_stderr {
+  background: #fdd;
+  /* very light red background for stderr */
+}
+div.output_latex {
+  text-align: left;
+}
+/* Empty output_javascript divs should have no height */
+div.output_javascript:empty {
+  padding: 0;
+}
+.js-error {
+  color: darkred;
+}
+/* raw_input styles */
+div.raw_input_container {
+  line-height: 1.21429em;
+  padding-top: 5px;
+}
+pre.raw_input_prompt {
+  /* nothing needed here. */
+}
+input.raw_input {
+  font-family: monospace;
+  font-size: inherit;
+  color: inherit;
+  width: auto;
+  /* make sure input baseline aligns with prompt */
+  vertical-align: baseline;
+  /* padding + margin = 0.5em between prompt and cursor */
+  padding: 0em 0.25em;
+  margin: 0em 0.25em;
+}
+input.raw_input:focus {
+  box-shadow: none;
+}
+p.p-space {
+  margin-bottom: 10px;
+}
+div.output_unrecognized {
+  padding: 5px;
+  font-weight: bold;
+  color: red;
+}
+div.output_unrecognized a {
+  color: inherit;
+  text-decoration: none;
+}
+div.output_unrecognized a:hover {
+  color: inherit;
+  text-decoration: none;
+}
+.rendered_html {
+  color: #000;
+  /* any extras will just be numbers: */
+}
+
+
+
+.rendered_html :link {
+  text-decoration: underline;
+}
+.rendered_html :visited {
+  text-decoration: underline;
+}
+
+
+
+
+
+
+.rendered_html h1:first-child {
+  margin-top: 0.538em;
+}
+.rendered_html h2:first-child {
+  margin-top: 0.636em;
+}
+.rendered_html h3:first-child {
+  margin-top: 0.777em;
+}
+.rendered_html h4:first-child {
+  margin-top: 1em;
+}
+.rendered_html h5:first-child {
+  margin-top: 1em;
+}
+.rendered_html h6:first-child {
+  margin-top: 1em;
+}
+
+
+
+
+
+
+
+
+.rendered_html * + ul {
+  margin-top: 1em;
+}
+.rendered_html * + ol {
+  margin-top: 1em;
+}
+
+
+.rendered_html pre,
+
+
+
+.rendered_html tr,
+.rendered_html th,
+
+.rendered_html td,
+
+
+.rendered_html * + table {
+  margin-top: 1em;
+}
+
+.rendered_html * + p {
+  margin-top: 1em;
+}
+
+.rendered_html * + img {
+  margin-top: 1em;
+}
+.rendered_html img,
+
+.rendered_html img.unconfined,
+
+div.text_cell {
+  /* Old browsers */
+  display: -webkit-box;
+  -webkit-box-orient: horizontal;
+  -webkit-box-align: stretch;
+  display: -moz-box;
+  -moz-box-orient: horizontal;
+  -moz-box-align: stretch;
+  display: box;
+  box-orient: horizontal;
+  box-align: stretch;
+  /* Modern browsers */
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+}
+@media (max-width: 540px) {
+  div.text_cell &gt; div.prompt {
+    display: none;
+  }
+}
+div.text_cell_render {
+  /*font-family: "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;*/
+  outline: none;
+  resize: none;
+  width: inherit;
+  border-style: none;
+  padding: 0.5em 0.5em 0.5em 0.4em;
+  color: #000;
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+}
+a.anchor-link:link {
+  text-decoration: none;
+  padding: 0px 20px;
+  visibility: hidden;
+}
+h1:hover .anchor-link,
+h2:hover .anchor-link,
+h3:hover .anchor-link,
+h4:hover .anchor-link,
+h5:hover .anchor-link,
+h6:hover .anchor-link {
+  visibility: visible;
+}
+.text_cell.rendered .input_area {
+  display: none;
+}
+.text_cell.rendered 
+.text_cell.unrendered .text_cell_render {
+  display: none;
+}
+.cm-header-1,
+.cm-header-2,
+.cm-header-3,
+.cm-header-4,
+.cm-header-5,
+.cm-header-6 {
+  font-weight: bold;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+.cm-header-1 {
+  font-size: 185.7%;
+}
+.cm-header-2 {
+  font-size: 157.1%;
+}
+.cm-header-3 {
+  font-size: 128.6%;
+}
+.cm-header-4 {
+  font-size: 110%;
+}
+.cm-header-5 {
+  font-size: 100%;
+  font-style: italic;
+}
+.cm-header-6 {
+  font-size: 100%;
+  font-style: italic;
+}
+&lt;/style&gt;
+&lt;style type="text/css"&gt;.highlight .hll { background-color: #ffffcc }
+.highlight  { background: #f8f8f8; }
+.highlight .c { color: #408080; font-style: italic } /* Comment */
+.highlight .err { border: 1px solid #FF0000 } /* Error */
+.highlight .k { color: #008000; font-weight: bold } /* Keyword */
+.highlight .o { color: #666666 } /* Operator */
+.highlight .ch { color: #408080; font-style: italic } /* Comment.Hashbang */
+.highlight .cm { color: #408080; font-style: italic } /* Comment.Multiline */
+.highlight .cp { color: #BC7A00 } /* Comment.Preproc */
+.highlight .cpf { color: #408080; font-style: italic } /* Comment.PreprocFile */
+.highlight .c1 { color: #408080; font-style: italic } /* Comment.Single */
+.highlight .cs { color: #408080; font-style: italic } /* Comment.Special */
+.highlight .gd { color: #A00000 } /* Generic.Deleted */
+.highlight .ge { font-style: italic } /* Generic.Emph */
+.highlight .gr { color: #FF0000 } /* Generic.Error */
+.highlight .gh { color: #000080; font-weight: bold } /* Generic.Heading */
+.highlight .gi { color: #00A000 } /* Generic.Inserted */
+.highlight .go { color: #888888 } /* Generic.Output */
+.highlight .gp { color: #000080; font-weight: bold } /* Generic.Prompt */
+.highlight .gs { font-weight: bold } /* Generic.Strong */
+.highlight .gu { color: #800080; font-weight: bold } /* Generic.Subheading */
+.highlight .gt { color: #0044DD } /* Generic.Traceback */
+.highlight .kc { color: #008000; font-weight: bold } /* Keyword.Constant */
+.highlight .kd { color: #008000; font-weight: bold } /* Keyword.Declaration */
+.highlight .kn { color: #008000; font-weight: bold } /* Keyword.Namespace */
+.highlight .kp { color: #008000 } /* Keyword.Pseudo */
+.highlight .kr { color: #008000; font-weight: bold } /* Keyword.Reserved */
+.highlight .kt { color: #B00040 } /* Keyword.Type */
+.highlight .m { color: #666666 } /* Literal.Number */
+.highlight .s { color: #BA2121 } /* Literal.String */
+.highlight .na { color: #7D9029 } /* Name.Attribute */
+.highlight .nb { color: #008000 } /* Name.Builtin */
+.highlight .nc { color: #0000FF; font-weight: bold } /* Name.Class */
+.highlight .no { color: #880000 } /* Name.Constant */
+.highlight .nd { color: #AA22FF } /* Name.Decorator */
+.highlight .ni { color: #999999; font-weight: bold } /* Name.Entity */
+.highlight .ne { color: #D2413A; font-weight: bold } /* Name.Exception */
+.highlight .nf { color: #0000FF } /* Name.Function */
+.highlight .nl { color: #A0A000 } /* Name.Label */
+.highlight .nn { color: #0000FF; font-weight: bold } /* Name.Namespace */
+.highlight .nt { color: #008000; font-weight: bold } /* Name.Tag */
+.highlight .nv { color: #19177C } /* Name.Variable */
+.highlight .ow { color: #AA22FF; font-weight: bold } /* Operator.Word */
+.highlight .w { color: #bbbbbb } /* Text.Whitespace */
+.highlight .mb { color: #666666 } /* Literal.Number.Bin */
+.highlight .mf { color: #666666 } /* Literal.Number.Float */
+.highlight .mh { color: #666666 } /* Literal.Number.Hex */
+.highlight .mi { color: #666666 } /* Literal.Number.Integer */
+.highlight .mo { color: #666666 } /* Literal.Number.Oct */
+.highlight .sb { color: #BA2121 } /* Literal.String.Backtick */
+.highlight .sc { color: #BA2121 } /* Literal.String.Char */
+.highlight .sd { color: #BA2121; font-style: italic } /* Literal.String.Doc */
+.highlight .s2 { color: #BA2121 } /* Literal.String.Double */
+.highlight .se { color: #BB6622; font-weight: bold } /* Literal.String.Escape */
+.highlight .sh { color: #BA2121 } /* Literal.String.Heredoc */
+.highlight .si { color: #BB6688; font-weight: bold } /* Literal.String.Interpol */
+.highlight .sx { color: #008000 } /* Literal.String.Other */
+.highlight .sr { color: #BB6688 } /* Literal.String.Regex */
+.highlight .s1 { color: #BA2121 } /* Literal.String.Single */
+.highlight .ss { color: #19177C } /* Literal.String.Symbol */
+.highlight .bp { color: #008000 } /* Name.Builtin.Pseudo */
+.highlight .vc { color: #19177C } /* Name.Variable.Class */
+.highlight .vg { color: #19177C } /* Name.Variable.Global */
+.highlight .vi { color: #19177C } /* Name.Variable.Instance */
+.highlight .il { color: #666666 } /* Literal.Number.Integer.Long */&lt;/style&gt;
+&lt;style type="text/css"&gt;
+/* Temporary definitions which will become obsolete with Notebook release 5.0 */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-bold { font-weight: bold; }
+&lt;/style&gt;
+&lt;div class="cell border-box-sizing text_cell rendered"&gt;
+&lt;div class="prompt input_prompt"&gt;
+&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+&lt;div class="text_cell_render border-box-sizing rendered_html"&gt;
+&lt;h1 id="How-to-normalize-log-likelihood-vectors"&gt;How to normalize log-likelihood vectors&lt;a class="anchor-link" href="#How-to-normalize-log-likelihood-vectors"&gt;&amp;#182;&lt;/a&gt;&lt;/h1&gt;&lt;p&gt;What is the best way to convert a log-likelihood vector into the corresponding log-probability vector, i.e. a vector of values whose exponential sum up to one?&lt;/p&gt;
+&lt;p&gt;TLDR: just subtract the &lt;code&gt;scipy.misc.logsumexp()&lt;/code&gt; of that vector.&lt;/p&gt;
+&lt;p&gt;Note: this notebook is &lt;a href="https://github.com/svendx4f/svendx4f.github.io/blob/dev/content/how_to_normalize_likelihood_vectors.ipynb"&gt;available on Github&lt;/a&gt; in case you want to play around with it.&lt;/p&gt;
+
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="cell border-box-sizing text_cell rendered"&gt;
+&lt;div class="prompt input_prompt"&gt;
+&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+&lt;div class="text_cell_render border-box-sizing rendered_html"&gt;
+&lt;h2 id="Usage-of-logs-in-probability-and-likelihood-computations"&gt;Usage of logs in probability and likelihood computations&lt;a class="anchor-link" href="#Usage-of-logs-in-probability-and-likelihood-computations"&gt;&amp;#182;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;Given a set of independent events $D= \{E_i\}$ with probabilities $\{p_i\}$, the probability of the joint occurance of all events in $D$ is simply&lt;/p&gt;
 $$P_D = \prod\limits_i^N p_i$$&lt;p&gt;This quantity however quickly gets impossible to compute on a computer as-written above since, each $p_i$ $\in [0,1]$, the result gets smaller and smaller as the multiplication goes on and quickly leads to underflow. Usage of logarithms of probabilities and of likelihoods is a very common computational trick to avoid that underflow which exploits the fact that a logarithm transforms a product into a sum, i.e.&lt;/p&gt;
 $$
 P_D = e^{log(\prod\limits_i P_i))} = e^{\sum\limits_i logP_i}
@@ -1004,7 +2330,7 @@ $$
 &lt;/div&gt;
 &lt;div class="inner_cell"&gt;
 &lt;div class="text_cell_render border-box-sizing rendered_html"&gt;
-&lt;h2 id="Normalization-of-a-log-likelihood-vector"&gt;Normalization of a log-likelihood vector&lt;a class="anchor-link" href="#Normalization-of-a-log-likelihood-vector"&gt;¶&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;Assume we have a learning model outputting a log likelihood vector $(L_0, ... L_{M-1})$ and we know the $M$ classes correspond to M mutually exclusive and collectively exhaustive events. What is the best way to obtain the corresponding probability vector, i.e the vector of probability that sum up to one?&lt;/p&gt;
+&lt;h2 id="Normalization-of-a-log-likelihood-vector"&gt;Normalization of a log-likelihood vector&lt;a class="anchor-link" href="#Normalization-of-a-log-likelihood-vector"&gt;&amp;#182;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;Assume we have a learning model outputting a log likelihood vector $(L_0, ... L_{M-1})$ and we know the $M$ classes correspond to M mutually exclusive and collectively exhaustive events. What is the best way to obtain the corresponding probability vector, i.e the vector of probability that sum up to one?&lt;/p&gt;
 &lt;p&gt;A naive approach consists in converting those log likelihoods into likelihoods and normalizing them, which corresponds to the &lt;a href="https://en.wikipedia.org/wiki/Softmax_function"&gt;softmax function&lt;/a&gt;:&lt;/p&gt;
 $$
 P_i = \frac{e^{L_i}}{\sum_j e^{L_j}} 
@@ -1016,10 +2342,11 @@ $$&lt;p&gt;Putting the last two relations together, we directly see we can compu
 $$
 K_i = L_i - log \sum_j e^{L_j}
 $$&lt;p&gt;Which is not prone to underflow as above. Converting that to a probability vector is just a matter of taking the exponential, which this time is also less prone to underflow (since the $K_i$ should typically be much larger than the $L_i$)&lt;/p&gt;
-&lt;h2 id="Implementation-in-scipy"&gt;Implementation in scipy&lt;a class="anchor-link" href="#Implementation-in-scipy"&gt;¶&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;In python, &lt;a href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.misc.logsumexp.html"&gt;scipy comes with&lt;/a&gt; a numerically stable way of computing the later term, so converting the log-likelihood vector L into the corresponding log-probability vector is a simple matter of:&lt;/p&gt;
+&lt;h2 id="Implementation-in-scipy"&gt;Implementation in scipy&lt;a class="anchor-link" href="#Implementation-in-scipy"&gt;&amp;#182;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;In python, &lt;a href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.misc.logsumexp.html"&gt;scipy comes with&lt;/a&gt; a numerically stable way of computing the later term, so converting the log-likelihood vector L into the corresponding log-probability vector is a simple matter of:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;scipy&lt;/span&gt;
 &lt;span class="n"&gt;K&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;L&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;scipy&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;misc&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;logsumexp&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;L&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
 &lt;/pre&gt;&lt;/div&gt;
+
 &lt;/div&gt;
 &lt;/div&gt;
 &lt;/div&gt;
@@ -1028,15 +2355,16 @@ $$&lt;p&gt;Which is not prone to underflow as above. Converting that to a probab
 &lt;/div&gt;
 &lt;div class="inner_cell"&gt;
 &lt;div class="text_cell_render border-box-sizing rendered_html"&gt;
-&lt;h1 id="Example"&gt;Example&lt;a class="anchor-link" href="#Example"&gt;¶&lt;/a&gt;&lt;/h1&gt;&lt;p&gt;I built a small example to investigate just how quickly the rounding error can occur. It turns out that with the parameters I entered, they occur very quickly. Feel free to download this notebook and play with the noise of number of classes values and see what gets out.&lt;/p&gt;
+&lt;h1 id="Example"&gt;Example&lt;a class="anchor-link" href="#Example"&gt;&amp;#182;&lt;/a&gt;&lt;/h1&gt;&lt;p&gt;I built a small example to investigate just how quickly the rounding error can occur. It turns out that with the parameters I entered, they occur very quickly. Feel free to download this notebook and play with the noise of number of classes values and see what gets out.&lt;/p&gt;
+
 &lt;/div&gt;
 &lt;/div&gt;
 &lt;/div&gt;
 &lt;div class="cell border-box-sizing code_cell rendered"&gt;
 &lt;div class="input"&gt;
-&lt;div class="prompt input_prompt"&gt;In [1]:&lt;/div&gt;
+&lt;div class="prompt input_prompt"&gt;In&amp;nbsp;[1]:&lt;/div&gt;
 &lt;div class="inner_cell"&gt;
-&lt;div class="input_area"&gt;
+    &lt;div class="input_area"&gt;
 &lt;div class=" highlight hl-ipython2"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;__future__&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;division&lt;/span&gt;
 &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;pandas&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;pd&lt;/span&gt;
 &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;numpy&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;np&lt;/span&gt;
@@ -1044,9 +2372,11 @@ $$&lt;p&gt;Which is not prone to underflow as above. Converting that to a probab
 &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;scipy.stats&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;stats&lt;/span&gt;
 &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;sys&lt;/span&gt;
 &lt;/pre&gt;&lt;/div&gt;
+
 &lt;/div&gt;
 &lt;/div&gt;
 &lt;/div&gt;
+
 &lt;/div&gt;
 &lt;div class="cell border-box-sizing text_cell rendered"&gt;
 &lt;div class="prompt input_prompt"&gt;
@@ -1055,38 +2385,39 @@ $$&lt;p&gt;Which is not prone to underflow as above. Converting that to a probab
 &lt;div class="text_cell_render border-box-sizing rendered_html"&gt;
 &lt;p&gt;My example is simulating inference with a probabilistic classifier that allocates to each observation a probability vector of size K describing the probability that this observation correspond to each class $k$.&lt;/p&gt;
 &lt;p&gt;I simulate such classifier by assuming that we have $n$ observations, from which my fake model generates $n$ probability vectors. My imaginary classifier below has no bias but quite a serious variance:&lt;/p&gt;
+
 &lt;/div&gt;
 &lt;/div&gt;
 &lt;/div&gt;
 &lt;div class="cell border-box-sizing code_cell rendered"&gt;
 &lt;div class="input"&gt;
-&lt;div class="prompt input_prompt"&gt;In [2]:&lt;/div&gt;
+&lt;div class="prompt input_prompt"&gt;In&amp;nbsp;[2]:&lt;/div&gt;
 &lt;div class="inner_cell"&gt;
-&lt;div class="input_area"&gt;
+    &lt;div class="input_area"&gt;
 &lt;div class=" highlight hl-ipython2"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="c1"&gt;# number of different values is some discrete random variable Y that we want to estimate&lt;/span&gt;
 &lt;span class="n"&gt;K&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;12&lt;/span&gt;
 
-&lt;span class="c1"&gt;# the true class underlying all of the observation we're generating&lt;/span&gt;
+&lt;span class="c1"&gt;# the true class underlying all of the observation we&amp;#39;re generating&lt;/span&gt;
 &lt;span class="n"&gt;y_true&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;8&lt;/span&gt;
 
-&lt;span class="c1"&gt;# Weights given to each class by the classifier =&gt; this simulates a classifier&lt;/span&gt;
+&lt;span class="c1"&gt;# Weights given to each class by the classifier =&amp;gt; this simulates a classifier&lt;/span&gt;
 &lt;span class="c1"&gt;# wich should more often output a higher probability to the true class y_true, although it &lt;/span&gt;
 &lt;span class="c1"&gt;# has a somehow large noise (standard deviation is 4, while we just have 12 classes)&lt;/span&gt;
 &lt;span class="n"&gt;classifier_p&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;stats&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;norm&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;pdf&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;x&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="nb"&gt;range&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;K&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="n"&gt;loc&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;y_true&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;scale&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;4&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
 &lt;span class="n"&gt;classifier_p&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;classifier_p&lt;/span&gt; &lt;span class="o"&gt;/&lt;/span&gt; &lt;span class="n"&gt;classifier_p&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sum&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
 
 &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;make_up_some_observation_probs&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;n&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-    &lt;span class="sd"&gt;"""&lt;/span&gt;
+    &lt;span class="sd"&gt;&amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;
 &lt;span class="sd"&gt;    Generates a (n*K) matrix made of n probability rows corresponding to n observations&lt;/span&gt;
 &lt;span class="sd"&gt;    This simulatates some upstream learning model that generates such probability vector&lt;/span&gt;
 &lt;span class="sd"&gt;    for each of the n observed data.     &lt;/span&gt;
 &lt;span class="sd"&gt;    &lt;/span&gt;
-&lt;span class="sd"&gt;    All generated observation correspond to one single true class: y_true =&gt; any case where&lt;/span&gt;
+&lt;span class="sd"&gt;    All generated observation correspond to one single true class: y_true =&amp;gt; any case where&lt;/span&gt;
 &lt;span class="sd"&gt;    the highest probability is != y_true is due to noise. &lt;/span&gt;
-&lt;span class="sd"&gt;    """&lt;/span&gt;
+&lt;span class="sd"&gt;    &amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;
     
     &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;random_observation_p&lt;/span&gt;&lt;span class="p"&gt;():&lt;/span&gt;
-        &lt;span class="s2"&gt;""&lt;/span&gt;
+        &lt;span class="s2"&gt;&amp;quot;&amp;quot;&lt;/span&gt;
         &lt;span class="n"&gt;obs&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;array&lt;/span&gt;&lt;span class="p"&gt;([&lt;/span&gt;&lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;random&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;beta&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;alpha&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;alpha&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;alpha&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;classifier_p&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
         
         &lt;span class="c1"&gt;# we prevent the fake model to output probability zero&lt;/span&gt;
@@ -1096,53 +2427,59 @@ $$&lt;p&gt;Which is not prone to underflow as above. Converting that to a probab
 
     &lt;span class="k"&gt;return&lt;/span&gt;  &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;array&lt;/span&gt;&lt;span class="p"&gt;([&lt;/span&gt;&lt;span class="n"&gt;random_observation_p&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;_&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="nb"&gt;range&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;n&lt;/span&gt;&lt;span class="p"&gt;)])&lt;/span&gt;
 &lt;/pre&gt;&lt;/div&gt;
+
 &lt;/div&gt;
 &lt;/div&gt;
 &lt;/div&gt;
+
 &lt;/div&gt;
 &lt;div class="cell border-box-sizing text_cell rendered"&gt;
 &lt;div class="prompt input_prompt"&gt;
 &lt;/div&gt;
 &lt;div class="inner_cell"&gt;
 &lt;div class="text_cell_render border-box-sizing rendered_html"&gt;
-&lt;h2 id="Class-inference"&gt;Class inference&lt;a class="anchor-link" href="#Class-inference"&gt;¶&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;Any call to &lt;code&gt;make_up_some_observation_probs()&lt;/code&gt; above generates a full set of $n$ predicted probability vectors from which we have to infer a single resulting probability vector of being in each class. Said otherwise, the assumption is that the $n$ samples are all part of the same class and we're trying to determine which one is the most likely, given the observation.&lt;/p&gt;
+&lt;h2 id="Class-inference"&gt;Class inference&lt;a class="anchor-link" href="#Class-inference"&gt;&amp;#182;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;Any call to &lt;code&gt;make_up_some_observation_probs()&lt;/code&gt; above generates a full set of $n$ predicted probability vectors from which we have to infer a single resulting probability vector of being in each class. Said otherwise, the assumption is that the $n$ samples are all part of the same class and we're trying to determine which one is the most likely, given the observation.&lt;/p&gt;
 &lt;p&gt;Once this probability vector is available, we select the class having the highest probability with the method below. In practise, this problem would &lt;em&gt;not&lt;/em&gt; require to convert log-probability nor log-likelihoods to probability: just comparing the log values provide the most likely class. I insist on performing the conversion though in order to observe how quickly the errors due to numerical computations occur.&lt;/p&gt;
+
 &lt;/div&gt;
 &lt;/div&gt;
 &lt;/div&gt;
 &lt;div class="cell border-box-sizing code_cell rendered"&gt;
 &lt;div class="input"&gt;
-&lt;div class="prompt input_prompt"&gt;In [3]:&lt;/div&gt;
+&lt;div class="prompt input_prompt"&gt;In&amp;nbsp;[3]:&lt;/div&gt;
 &lt;div class="inner_cell"&gt;
-&lt;div class="input_area"&gt;
+    &lt;div class="input_area"&gt;
 &lt;div class=" highlight hl-ipython2"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;map_predict&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;prob_vect&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
     &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;isnan&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;prob_vect&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sum&lt;/span&gt;&lt;span class="p"&gt;()):&lt;/span&gt;
         &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;nan&lt;/span&gt;
     &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;argmax&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;prob_vect&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
 &lt;/pre&gt;&lt;/div&gt;
+
 &lt;/div&gt;
 &lt;/div&gt;
 &lt;/div&gt;
+
 &lt;/div&gt;
 &lt;div class="cell border-box-sizing text_cell rendered"&gt;
 &lt;div class="prompt input_prompt"&gt;
 &lt;/div&gt;
 &lt;div class="inner_cell"&gt;
 &lt;div class="text_cell_render border-box-sizing rendered_html"&gt;
-&lt;h1 id="Building-the-resulting-probability-vector"&gt;Building the resulting probability vector&lt;a class="anchor-link" href="#Building-the-resulting-probability-vector"&gt;¶&lt;/a&gt;&lt;/h1&gt;&lt;p&gt;This section implements 3 inference models, all expecting a matrix of &lt;code&gt;n&lt;/code&gt; probability vectors, corresponding to the &lt;code&gt;n&lt;/code&gt; observed samples.&lt;/p&gt;
+&lt;h1 id="Building-the-resulting-probability-vector"&gt;Building the resulting probability vector&lt;a class="anchor-link" href="#Building-the-resulting-probability-vector"&gt;&amp;#182;&lt;/a&gt;&lt;/h1&gt;&lt;p&gt;This section implements 3 inference models, all expecting a matrix of &lt;code&gt;n&lt;/code&gt; probability vectors, corresponding to the &lt;code&gt;n&lt;/code&gt; observed samples.&lt;/p&gt;
+
 &lt;/div&gt;
 &lt;/div&gt;
 &lt;/div&gt;
 &lt;div class="cell border-box-sizing code_cell rendered"&gt;
 &lt;div class="input"&gt;
-&lt;div class="prompt input_prompt"&gt;In [4]:&lt;/div&gt;
+&lt;div class="prompt input_prompt"&gt;In&amp;nbsp;[4]:&lt;/div&gt;
 &lt;div class="inner_cell"&gt;
-&lt;div class="input_area"&gt;
+    &lt;div class="input_area"&gt;
 &lt;div class=" highlight hl-ipython2"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;straight_forward_map&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;obs_probabilities&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-    &lt;span class="sd"&gt;"""&lt;/span&gt;
+    &lt;span class="sd"&gt;&amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;
 &lt;span class="sd"&gt;    This inference models works completely in probability space: it computes the likelihood &lt;/span&gt;
 &lt;span class="sd"&gt;    of each class by simply multiplying the sequence of predicted probabilities, and normalize the result    &lt;/span&gt;
-&lt;span class="sd"&gt;    """&lt;/span&gt;
+&lt;span class="sd"&gt;    &amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;
     
     &lt;span class="c1"&gt;# this very quickly underflows..&lt;/span&gt;
     &lt;span class="n"&gt;likelihoods&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;obs_probabilities&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;prod&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;axis&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
@@ -1154,13 +2491,13 @@ $$&lt;p&gt;Which is not prone to underflow as above. Converting that to a probab
     
     
 &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;normalized_log_sum_map&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;obs_probabilities&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-    &lt;span class="sd"&gt;"""&lt;/span&gt;
+    &lt;span class="sd"&gt;&amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;
 &lt;span class="sd"&gt;    This inference models solves the first underflow error by summing up log-likelihoods. &lt;/span&gt;
 &lt;span class="sd"&gt;    &lt;/span&gt;
 &lt;span class="sd"&gt;    However, in order to normalize it into a probability vector, this implementation first &lt;/span&gt;
 &lt;span class="sd"&gt;    takes the exponential of the likelihood and normalizes the result, which also leads to &lt;/span&gt;
 &lt;span class="sd"&gt;    an underflow issue.&lt;/span&gt;
-&lt;span class="sd"&gt;    """&lt;/span&gt;
+&lt;span class="sd"&gt;    &amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;
 
     &lt;span class="n"&gt;log_likelihoods&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;log&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;obs_probabilities&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sum&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;axis&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
 
@@ -1172,35 +2509,37 @@ $$&lt;p&gt;Which is not prone to underflow as above. Converting that to a probab
 
 
 &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;normalized_log_space_map&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;obs_probabilities&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-    &lt;span class="sd"&gt;"""&lt;/span&gt;
+    &lt;span class="sd"&gt;&amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;
 &lt;span class="sd"&gt;    Finally, this inference models computes the probability vector by summing up the &lt;/span&gt;
 &lt;span class="sd"&gt;    log likelihoods, normalizing the result by substracting its log-sum-exp and only then &lt;/span&gt;
 &lt;span class="sd"&gt;    getting out of the log domain. &lt;/span&gt;
-&lt;span class="sd"&gt;    """&lt;/span&gt;
+&lt;span class="sd"&gt;    &amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;
 
     &lt;span class="n"&gt;log_likelihoods&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;log&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;obs_probabilities&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sum&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;axis&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
     &lt;span class="n"&gt;log_probs&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;log_likelihoods&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;sc&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;misc&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;logsumexp&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;log_likelihoods&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
     &lt;span class="n"&gt;probability&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;exp&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;log_probs&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
     &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;map_predict&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;probability&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
 &lt;/pre&gt;&lt;/div&gt;
+
 &lt;/div&gt;
 &lt;/div&gt;
 &lt;/div&gt;
+
 &lt;/div&gt;
 &lt;div class="cell border-box-sizing code_cell rendered"&gt;
 &lt;div class="input"&gt;
-&lt;div class="prompt input_prompt"&gt;In [5]:&lt;/div&gt;
+&lt;div class="prompt input_prompt"&gt;In&amp;nbsp;[5]:&lt;/div&gt;
 &lt;div class="inner_cell"&gt;
-&lt;div class="input_area"&gt;
+    &lt;div class="input_area"&gt;
 &lt;div class=" highlight hl-ipython2"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;%%&lt;/span&gt;&lt;span class="k"&gt;time&lt;/span&gt;
 
 def run_experiment(test_size):
-    """
+    &amp;quot;&amp;quot;&amp;quot;
     This experiment simply generates 100 (noisy) learning outcomes of various sizes
     and submit them to each of the 3 inference models above.
     
     The same set of data is every time submitted to each of the 3 models.
-    """
+    &amp;quot;&amp;quot;&amp;quot;
     
     observations = make_up_some_observation_probs(test_size)
     
@@ -1210,17 +2549,21 @@ def run_experiment(test_size):
         normalized_log_space_map(observations)
     ]
 
-results = pd.DataFrame([["%05d observations" % test_size] + run_experiment(test_size)
+results = pd.DataFrame([[&amp;quot;%05d observations&amp;quot; % test_size] + run_experiment(test_size)
               for test_size in [10, 30, 50, 100, 150, 500, 1000, 5000, 10000]
               for _ in range(100)],
-               columns=["test_size", "m1", "m2", "m3"]
+               columns=[&amp;quot;test_size&amp;quot;, &amp;quot;m1&amp;quot;, &amp;quot;m2&amp;quot;, &amp;quot;m3&amp;quot;]
             )
 &lt;/pre&gt;&lt;/div&gt;
+
 &lt;/div&gt;
 &lt;/div&gt;
 &lt;/div&gt;
+
 &lt;div class="output_wrapper"&gt;
 &lt;div class="output"&gt;
+
+
 &lt;div class="output_area"&gt;&lt;div class="prompt"&gt;&lt;/div&gt;
 &lt;div class="output_subarea output_stream output_stdout output_text"&gt;
 &lt;pre&gt;CPU times: user 43.8 s, sys: 314 ms, total: 44.1 s
@@ -1228,80 +2571,99 @@ Wall time: 44 s
 &lt;/pre&gt;
 &lt;/div&gt;
 &lt;/div&gt;
+
 &lt;/div&gt;
 &lt;/div&gt;
+
 &lt;/div&gt;
 &lt;div class="cell border-box-sizing text_cell rendered"&gt;
 &lt;div class="prompt input_prompt"&gt;
 &lt;/div&gt;
 &lt;div class="inner_cell"&gt;
 &lt;div class="text_cell_render border-box-sizing rendered_html"&gt;
-&lt;h1 id="Results"&gt;Results&lt;a class="anchor-link" href="#Results"&gt;¶&lt;/a&gt;&lt;/h1&gt;
+&lt;h1 id="Results"&gt;Results&lt;a class="anchor-link" href="#Results"&gt;&amp;#182;&lt;/a&gt;&lt;/h1&gt;
 &lt;/div&gt;
 &lt;/div&gt;
 &lt;/div&gt;
 &lt;div class="cell border-box-sizing code_cell rendered"&gt;
 &lt;div class="input"&gt;
-&lt;div class="prompt input_prompt"&gt;In [7]:&lt;/div&gt;
+&lt;div class="prompt input_prompt"&gt;In&amp;nbsp;[7]:&lt;/div&gt;
 &lt;div class="inner_cell"&gt;
-&lt;div class="input_area"&gt;
+    &lt;div class="input_area"&gt;
 &lt;div class=" highlight hl-ipython2"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;readline&lt;/span&gt;
 
 &lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="k"&gt;load_ext&lt;/span&gt; rpy2.ipython
-&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="k"&gt;R&lt;/span&gt; library("ggplot2")
+&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="k"&gt;R&lt;/span&gt; library(&amp;quot;ggplot2&amp;quot;)
 &lt;/pre&gt;&lt;/div&gt;
+
 &lt;/div&gt;
 &lt;/div&gt;
 &lt;/div&gt;
+
 &lt;div class="output_wrapper"&gt;
 &lt;div class="output"&gt;
+
+
 &lt;div class="output_area"&gt;&lt;div class="prompt output_prompt"&gt;Out[7]:&lt;/div&gt;
+
+
 &lt;div class="output_text output_subarea output_execute_result"&gt;
-&lt;pre&gt;array(['ggplot2', 'tools', 'stats', 'graphics', 'grDevices', 'utils', 'datasets', 'methods', 'base'], 
-      dtype='|S9')&lt;/pre&gt;
+&lt;pre&gt;array([&amp;#39;ggplot2&amp;#39;, &amp;#39;tools&amp;#39;, &amp;#39;stats&amp;#39;, &amp;#39;graphics&amp;#39;, &amp;#39;grDevices&amp;#39;, &amp;#39;utils&amp;#39;, &amp;#39;datasets&amp;#39;, &amp;#39;methods&amp;#39;, &amp;#39;base&amp;#39;], 
+      dtype=&amp;#39;|S9&amp;#39;)&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;/div&gt;
+
 &lt;/div&gt;
 &lt;/div&gt;
-&lt;/div&gt;
-&lt;/div&gt;
+
 &lt;/div&gt;
 &lt;div class="cell border-box-sizing code_cell rendered"&gt;
 &lt;div class="input"&gt;
-&lt;div class="prompt input_prompt"&gt;In [8]:&lt;/div&gt;
+&lt;div class="prompt input_prompt"&gt;In&amp;nbsp;[8]:&lt;/div&gt;
 &lt;div class="inner_cell"&gt;
-&lt;div class="input_area"&gt;
+    &lt;div class="input_area"&gt;
 &lt;div class=" highlight hl-ipython2"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;results_named&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;results&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;rename&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;columns&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;
-        &lt;span class="s2"&gt;"m1"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;"straight_forward_map"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-        &lt;span class="s2"&gt;"m2"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;"normalized_log_sum_map"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-        &lt;span class="s2"&gt;"m3"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;"normalized_log_space_map"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;        
+        &lt;span class="s2"&gt;&amp;quot;m1&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;straight_forward_map&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="s2"&gt;&amp;quot;m2&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;normalized_log_sum_map&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="s2"&gt;&amp;quot;m3&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;normalized_log_space_map&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;        
     &lt;span class="p"&gt;})&lt;/span&gt;
 
 
-&lt;span class="n"&gt;results_m&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;pd&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;melt&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;results_named&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;id_vars&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;"test_size"&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="n"&gt;var_name&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"method"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;value_name&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"predicted_class"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;results_m&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;pd&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;melt&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;results_named&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;id_vars&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;test_size&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="n"&gt;var_name&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;method&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;value_name&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;predicted_class&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
 &lt;/pre&gt;&lt;/div&gt;
+
 &lt;/div&gt;
 &lt;/div&gt;
 &lt;/div&gt;
+
 &lt;/div&gt;
 &lt;div class="cell border-box-sizing code_cell rendered"&gt;
 &lt;div class="input"&gt;
-&lt;div class="prompt input_prompt"&gt;In [10]:&lt;/div&gt;
+&lt;div class="prompt input_prompt"&gt;In&amp;nbsp;[10]:&lt;/div&gt;
 &lt;div class="inner_cell"&gt;
-&lt;div class="input_area"&gt;
+    &lt;div class="input_area"&gt;
 &lt;div class=" highlight hl-ipython2"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;%%&lt;/span&gt;R &lt;span class="o"&gt;-&lt;/span&gt;i results_m &lt;span class="o"&gt;--&lt;/span&gt;width &lt;span class="m"&gt;1000&lt;/span&gt; &lt;span class="o"&gt;--&lt;/span&gt;height &lt;span class="m"&gt;700&lt;/span&gt;
 
-g &lt;span class="o"&gt;&lt;-&lt;/span&gt; ggplot&lt;span class="p"&gt;(&lt;/span&gt;data&lt;span class="o"&gt;=&lt;/span&gt;results_m&lt;span class="p"&gt;)&lt;/span&gt;
-g &lt;span class="o"&gt;&lt;-&lt;/span&gt; g &lt;span class="o"&gt;+&lt;/span&gt; geom_histogram&lt;span class="p"&gt;(&lt;/span&gt;aes&lt;span class="p"&gt;(&lt;/span&gt;x&lt;span class="o"&gt;=&lt;/span&gt;predicted_class&lt;span class="p"&gt;,&lt;/span&gt; fill&lt;span class="o"&gt;=&lt;/span&gt;method&lt;span class="p"&gt;),&lt;/span&gt; position&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;"dodge"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-g &lt;span class="o"&gt;&lt;-&lt;/span&gt; g &lt;span class="o"&gt;+&lt;/span&gt; facet_wrap&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;~&lt;/span&gt;test_size&lt;span class="p"&gt;,&lt;/span&gt; ncol&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="m"&gt;3&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-g &lt;span class="o"&gt;&lt;-&lt;/span&gt; g &lt;span class="o"&gt;+&lt;/span&gt; theme_bw&lt;span class="p"&gt;(&lt;/span&gt;base_size&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="m"&gt;18&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+g &lt;span class="o"&gt;&amp;lt;-&lt;/span&gt; ggplot&lt;span class="p"&gt;(&lt;/span&gt;data&lt;span class="o"&gt;=&lt;/span&gt;results_m&lt;span class="p"&gt;)&lt;/span&gt;
+g &lt;span class="o"&gt;&amp;lt;-&lt;/span&gt; g &lt;span class="o"&gt;+&lt;/span&gt; geom_histogram&lt;span class="p"&gt;(&lt;/span&gt;aes&lt;span class="p"&gt;(&lt;/span&gt;x&lt;span class="o"&gt;=&lt;/span&gt;predicted_class&lt;span class="p"&gt;,&lt;/span&gt; fill&lt;span class="o"&gt;=&lt;/span&gt;method&lt;span class="p"&gt;),&lt;/span&gt; position&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;dodge&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+g &lt;span class="o"&gt;&amp;lt;-&lt;/span&gt; g &lt;span class="o"&gt;+&lt;/span&gt; facet_wrap&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;~&lt;/span&gt;test_size&lt;span class="p"&gt;,&lt;/span&gt; ncol&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="m"&gt;3&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+g &lt;span class="o"&gt;&amp;lt;-&lt;/span&gt; g &lt;span class="o"&gt;+&lt;/span&gt; theme_bw&lt;span class="p"&gt;(&lt;/span&gt;base_size&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="m"&gt;18&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
 
 &lt;span class="kp"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;g&lt;span class="p"&gt;)&lt;/span&gt;
 &lt;/pre&gt;&lt;/div&gt;
+
 &lt;/div&gt;
 &lt;/div&gt;
 &lt;/div&gt;
+
 &lt;div class="output_wrapper"&gt;
 &lt;div class="output"&gt;
+
+
 &lt;div class="output_area"&gt;&lt;div class="prompt"&gt;&lt;/div&gt;
+
+
 &lt;div class="output_png output_subarea "&gt;
 &lt;img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA+gAAAK8CAYAAAB8y5WxAAAD8GlDQ1BJQ0MgUHJvZmlsZQAAOI2N
 Vd1v21QUP4lvXKQWP6Cxjg4Vi69VU1u5GxqtxgZJk6XpQhq5zdgqpMl1bhpT1za2021Vn/YCbwz4
@@ -2499,10 +3861,13 @@ AoRZqyt10hkIQAACEIAABCAAAQhAAAIQSCoBDPSkag65IQABCEAAAhCAAAQgAAEIQKCuCGCg15U6
 6QwEIAABCEAAAhCAAAQgAAEIJJUABnpSNYfcEIAABCAAAQhAAAIQgAAEIFBXBDDQ60qddAYCEIAA
 BCAAAQhAAAIQgAAEkkrg/wAfhAQTieVlmwAAAABJRU5ErkJggg==
 "&gt;
-&lt;/img&gt;&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;/div&gt;
+
 &lt;/div&gt;
 &lt;/div&gt;
-&lt;/div&gt;
+
 &lt;/div&gt;
 &lt;div class="cell border-box-sizing text_cell rendered"&gt;
 &lt;div class="prompt input_prompt"&gt;
@@ -2514,6 +3879,7 @@ BCAAAQhAAAIQgAAEkkrg/wAfhAQTieVlmwAAAABJRU5ErkJggg==
 &lt;p&gt;As the number of observations grows, variance decreases as expected and the true class gets predicted correctly most of the time.&lt;/p&gt;
 &lt;p&gt;On all the histograms where the 3 models are present, they have exactly the same distribution, which strongly hints that they generate the same results. This is expected since, appart from the numerical computation issues, they are all mathematically equivalent.&lt;/p&gt;
 &lt;p&gt;On the lower histograms, only the &lt;code&gt;normalize_log_space_map&lt;/code&gt; algorithm, corresponding to the third algorithm above, is present: the other two models both already start to underflow for some classes and are unable to produce a result. With this particular set of parameter for my toy problem this occurs as soon as the dataset reaches 150 samples, which is fairly small. The third one by comparaison has no problem handling 10000 samples.&lt;/p&gt;
+
 &lt;/div&gt;
 &lt;/div&gt;
 &lt;/div&gt;
