@@ -1,4 +1,6 @@
 following instructions from: https://www.dataquest.io/blog/how-to-setup-a-data-science-blog/
+all the below is done on the dev branch
+also, this requires https://github.com/davisp/ghp-import for merging the output to the master branch
 
 preview:
  pelican content
