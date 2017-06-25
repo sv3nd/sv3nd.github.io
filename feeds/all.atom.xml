@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Svend's blog</title><link href="https://svendx4f.github.io/" rel="alternate"></link><link href="https://svendx4f.github.io/feeds/all.atom.xml" rel="self"></link><id>https://svendx4f.github.io/</id><updated>2016-10-18T14:22:00+02:00</updated><entry><title>Using model post-processor within scikit-learn pipelines</title><link href="https://svendx4f.github.io/using-model-post-processor-within-scikit-learn-pipelines.html" rel="alternate"></link><published>2016-10-18T14:22:00+02:00</published><updated>2016-10-18T14:22:00+02:00</updated><author><name>Svend Vanderveken</name></author><id>tag:svendx4f.github.io,2016-10-18:using-model-post-processor-within-scikit-learn-pipelines.html</id><summary type="html">&lt;style type="text/css"&gt;/*!
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Svend Vanderveken</title><link href="https://svendx4f.github.io/" rel="alternate"></link><link href="https://svendx4f.github.io/feeds/all.atom.xml" rel="self"></link><id>https://svendx4f.github.io/</id><updated>2016-10-18T14:22:00+02:00</updated><entry><title>Using model post-processor within scikit-learn pipelines</title><link href="https://svendx4f.github.io/using-model-post-processor-within-scikit-learn-pipelines.html" rel="alternate"></link><published>2016-10-18T14:22:00+02:00</published><updated>2016-10-18T14:22:00+02:00</updated><author><name>Svend Vanderveken</name></author><id>tag:svendx4f.github.io,2016-10-18:/using-model-post-processor-within-scikit-learn-pipelines.html</id><summary type="html">
+&lt;div class="cell border-box-sizing text_cell rendered"&gt;
+&lt;div class="prompt input_prompt"&gt;
+&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+&lt;div class="text_cell_render border-box-sizing rendered_html"&gt;
+&lt;h2 id="On-the-lack-of-post-processors"&gt;On the lack of post-processors&lt;a class="anchor-link" href="#On-the-lack-of-post-processors"&gt;&amp;#182;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;&lt;a href="http://scikit-learn.org/stable/modules/pipeline.html#pipeline"&gt;Pipelines&lt;/a&gt; are a very handy and central feature of the scikit-learn library that enable to chain sequences, or even, in a limited way, DAGs, of data transformers and one machine learning model. They greatly facilitate the application of cross-validation scoring or hyper-parameter search on the resulting pipeline as a whole. They also ease the productization of a machine learning exercise by providing one single encapsulated trained model that can be applied as one instance on a test set or integrated into a production product.&lt;/p&gt;</summary><content type="html">&lt;style type="text/css"&gt;/*!
 *
 * IPython notebook
 *
@@ -918,8 +924,10 @@ h6:hover .anchor-link {
 .highlight .mh { color: #666666 } /* Literal.Number.Hex */
 .highlight .mi { color: #666666 } /* Literal.Number.Integer */
 .highlight .mo { color: #666666 } /* Literal.Number.Oct */
+.highlight .sa { color: #BA2121 } /* Literal.String.Affix */
 .highlight .sb { color: #BA2121 } /* Literal.String.Backtick */
 .highlight .sc { color: #BA2121 } /* Literal.String.Char */
+.highlight .dl { color: #BA2121 } /* Literal.String.Delimiter */
 .highlight .sd { color: #BA2121; font-style: italic } /* Literal.String.Doc */
 .highlight .s2 { color: #BA2121 } /* Literal.String.Double */
 .highlight .se { color: #BB6622; font-weight: bold } /* Literal.String.Escape */
@@ -930,9 +938,11 @@ h6:hover .anchor-link {
 .highlight .s1 { color: #BA2121 } /* Literal.String.Single */
 .highlight .ss { color: #19177C } /* Literal.String.Symbol */
 .highlight .bp { color: #008000 } /* Name.Builtin.Pseudo */
+.highlight .fm { color: #0000FF } /* Name.Function.Magic */
 .highlight .vc { color: #19177C } /* Name.Variable.Class */
 .highlight .vg { color: #19177C } /* Name.Variable.Global */
 .highlight .vi { color: #19177C } /* Name.Variable.Instance */
+.highlight .vm { color: #19177C } /* Name.Variable.Magic */
 .highlight .il { color: #666666 } /* Literal.Number.Integer.Long */&lt;/style&gt;
 &lt;style type="text/css"&gt;
 /* Temporary definitions which will become obsolete with Notebook release 5.0 */
@@ -976,7 +986,7 @@ h6:hover .anchor-link {
 &lt;/div&gt;
 &lt;div class="inner_cell"&gt;
 &lt;div class="text_cell_render border-box-sizing rendered_html"&gt;
-&lt;h1 id="On-the-lack-of-post-processors"&gt;On the lack of post-processors&lt;a class="anchor-link" href="#On-the-lack-of-post-processors"&gt;&amp;#182;&lt;/a&gt;&lt;/h1&gt;&lt;p&gt;&lt;a href="http://scikit-learn.org/stable/modules/pipeline.html#pipeline"&gt;Pipelines&lt;/a&gt; are a very handy and central feature of the scikit-learn library that enable to chain sequences, or even, in a limited way, DAGs, of data transformers and one machine learning model. They greatly facilitate the application of cross-validation scoring or hyper-parameter search on the resulting pipeline as a whole. They also ease the productization of a machine learning exercise by providing one single encapsulated trained model that can be applied as one instance on a test set or integrated into a production product.&lt;/p&gt;
+&lt;h2 id="On-the-lack-of-post-processors"&gt;On the lack of post-processors&lt;a class="anchor-link" href="#On-the-lack-of-post-processors"&gt;&amp;#182;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;&lt;a href="http://scikit-learn.org/stable/modules/pipeline.html#pipeline"&gt;Pipelines&lt;/a&gt; are a very handy and central feature of the scikit-learn library that enable to chain sequences, or even, in a limited way, DAGs, of data transformers and one machine learning model. They greatly facilitate the application of cross-validation scoring or hyper-parameter search on the resulting pipeline as a whole. They also ease the productization of a machine learning exercise by providing one single encapsulated trained model that can be applied as one instance on a test set or integrated into a production product.&lt;/p&gt;
 &lt;p&gt;For a very clear introduction, see also the excellent &lt;a href="http://zacstewart.com/2014/08/05/pipelines-of-featureunions-of-pipelines.html"&gt;Using scikit-learn Pipelines and FeatureUnions&lt;/a&gt; blog post by Zac Stewart.&lt;/p&gt;
 
 &lt;/div&gt;
@@ -992,7 +1002,7 @@ h6:hover .anchor-link {
 &lt;li&gt;each element of the pipeline, except maybe the last one, must be &lt;em&gt;transformers&lt;/em&gt;, i.e. provide a &lt;code&gt;transform(X)&lt;/code&gt; method&lt;/li&gt;
 &lt;li&gt;the last element of a pipeline can either be a &lt;em&gt;transformer&lt;/em&gt;, in which case the result behaves like a grand-unified transformer, or a &lt;em&gt;predictor&lt;/em&gt;, i.e. a element providing a &lt;code&gt;predict()&lt;/code&gt; or &lt;code&gt;predict_proba()&lt;/code&gt; (this is a simplification, see the actual API for details). In the later case, the resulting pipeline behaves like a predictor, can be used for scoring and can be used in a cross-validation pipeline. &lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;img width="640" align="middle" src="images/scikit-learn-pipeline-post-processing_sk_pipeline.svg" /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="images/scikit-learn-pipeline-post-processing_sk_pipeline.png" alt="scikit-learn pipeline"&gt;&lt;/p&gt;
 &lt;p&gt;I am not knowledgeable about nor experienced with  the scikit-learn architecure to understand the rationale of this choice. My naive reaction is that the distinction between the three functions (&lt;code&gt;transform()&lt;/code&gt;, &lt;code&gt;predict()&lt;/code&gt;and &lt;code&gt;predict_proba()&lt;/code&gt; is of importance for other parts of the architecture, or present for historical reasons. My first apporach to this is that maybe just a single &lt;code&gt;transform()&lt;/code&gt; function would have been enough and allows more composition flexibility.&lt;/p&gt;
 
 &lt;/div&gt;
@@ -1007,12 +1017,12 @@ h6:hover .anchor-link {
 &lt;ul&gt;
 &lt;li&gt;&lt;p&gt;To force a prediction to be within a known validity domain. For example, in &lt;a href="https://www.kaggle.com/c/bike-sharing-demand"&gt;this Kaggle tutorial&lt;/a&gt;, the output of the model is a count of bike usage events, so it must be integer and non-negative. If I use a model that does not guarantee that (say, a simple linear model), I'd like to be able to pipe the result into a transformer &lt;em&gt;before&lt;/em&gt; scoring the result.&lt;/p&gt;
 &lt;/li&gt;
-&lt;li&gt;&lt;p&gt;Another (rather theoretical) example is simple composed models, like logistic regression, which stricto-senso is a linear model piped into a sigmoid transformer.&lt;/p&gt;
+&lt;li&gt;&lt;p&gt;Another (rather theoretical) example is simple composed models, like logistic regression, which stricto-senso is a learning model piped into a sigmoid transformer.&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;img align="middle" src="images/scikit-learn-pipeline-post-processing_sk_lin_reg.png" /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="images/scikit-learn-pipeline-post-processing_sk_pipeline_lin_reg.png" alt="linear regression"&gt;&lt;/p&gt;
 &lt;ul&gt;
-&lt;li&gt;Finall, model calibration techniques, like adjusting predicted probability to proportions actually observed within a validation set, could be implemented as post-processors.&lt;/li&gt;
+&lt;li&gt;Finall, model calibration techniques, like adjusting predicted probability to actually observed proportion within a validation set, could be implemented as post-processors.&lt;/li&gt;
 &lt;/ul&gt;
 
 &lt;/div&gt;
@@ -1025,9 +1035,9 @@ h6:hover .anchor-link {
 &lt;div class="text_cell_render border-box-sizing rendered_html"&gt;
 &lt;h2 id="Existing-workarounds"&gt;Existing workarounds&lt;a class="anchor-link" href="#Existing-workarounds"&gt;&amp;#182;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;Before introducing the simple wrappers I coded below, let's clarify that those "limitation" are not a showstopper.&lt;/p&gt;
 &lt;p&gt;In the Kaggle example I gave above, an easy workaround consists in writting a custom scoring method that post-processes the model output before actually scoring it. This enables to have a correct score in each fold of the cross-validation loop:&lt;/p&gt;
-&lt;p&gt;&lt;img width="640" align="middle" src="images/scikit-learn-pipeline-post-processing_sk_xval.svg" /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="images/scikit-learn-pipeline-post-processing_sk_pipeline_sk_cross_val.png" alt="post-processing in scorer"&gt;&lt;/p&gt;
 &lt;p&gt;In the case of logistic regression, &lt;a href="http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html"&gt;Scikit-learn is of course providing an implementation that includes the sigmoid as art of the model itself&lt;/a&gt;, this is working perfectly fine and poses no issues. My only point here is that if one was to re-implement a logistic regression algorithm today, this person would not be able to break it down as a several steps of a scikit-learn pipeline.&lt;/p&gt;
-&lt;p&gt;&lt;img width="640" align="middle" src="images/scikit-learn-pipeline-post-processing_lin_reg_pipe.png" /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="images/scikit-learn-pipeline-post-processing_sk_pipeline_sk_lin_reg_pipe.png" alt="scikit-learn linear regression"&gt;&lt;/p&gt;
 &lt;p&gt;In both cases, in term of software design we can see that the concept of transformation &lt;em&gt;leaks&lt;/em&gt; from the transformer itself to the nearest adjacent elements in the pipeline, either the scoring method or the model itself.&lt;/p&gt;
 
 &lt;/div&gt;
@@ -1039,7 +1049,7 @@ h6:hover .anchor-link {
 &lt;div class="inner_cell"&gt;
 &lt;div class="text_cell_render border-box-sizing rendered_html"&gt;
 &lt;h2 id="Allowing-models-anywhere-in-the-pipeline"&gt;Allowing models anywhere in the pipeline&lt;a class="anchor-link" href="#Allowing-models-anywhere-in-the-pipeline"&gt;&amp;#182;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;A more general solution is to wrap the model such that it behaves like a tranformer. I'm not the author of this idea, some places where it has been hinted before are &lt;a href="https://github.com/scikit-learn/scikit-learn/issues/4143"&gt;here&lt;/a&gt; and &lt;a href="https://github.com/scikit-learn/scikit-learn/pull/4552"&gt;here&lt;/a&gt;, among others.&lt;/p&gt;
-&lt;p&gt;The class below achieves that very simply, by re-routing calls to &lt;code&gt;transform()&lt;/code&gt; to the underlying pipeline &lt;code&gt;predict()&lt;/code&gt;:&lt;/p&gt;
+&lt;p&gt;The class below achieves that very simply, by re-routing calls to &lt;code&gt;transform&lt;/code&gt; to the underlying pipeline &lt;code&gt;predict()&lt;/code&gt;:&lt;/p&gt;
 
 &lt;/div&gt;
 &lt;/div&gt;
@@ -1058,8 +1068,8 @@ h6:hover .anchor-link {
 &lt;span class="sd"&gt;    This seemed to work when I tested it on scikit-learn 0.18, but you&amp;#39;d rather not believe me.&lt;/span&gt;
 &lt;span class="sd"&gt;    &amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;
     
-    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;__init__&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;steps&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-        &lt;span class="n"&gt;Pipeline&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__init__&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;steps&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="fm"&gt;__init__&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;steps&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="n"&gt;Pipeline&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="fm"&gt;__init__&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;steps&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
         
     &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;transform&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;X&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
         &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;predict&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;X&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;    
@@ -1098,15 +1108,14 @@ h6:hover .anchor-link {
 &lt;span class="sd"&gt;    This seemed to work when I tested it on scikit-learn 0.18, but you&amp;#39;d rather not believe me.&lt;/span&gt;
 &lt;span class="sd"&gt;    &amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;
     
-    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;__init__&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;steps&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-        &lt;span class="n"&gt;Pipeline&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__init__&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;steps&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="fm"&gt;__init__&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;steps&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="n"&gt;Pipeline&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="fm"&gt;__init__&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;steps&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
         
     &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;predict&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;X&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
         &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;transform&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;X&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
     
     &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;fit_predict&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;X&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;y&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;**&lt;/span&gt;&lt;span class="n"&gt;fit_params&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
         &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;fit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;X&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;y&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;**&lt;/span&gt;&lt;span class="n"&gt;fit_params&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;transform&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;X&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;    
-    
 &lt;/pre&gt;&lt;/div&gt;
 
 &lt;/div&gt;
@@ -1146,7 +1155,7 @@ h6:hover .anchor-link {
 &lt;/div&gt;
 &lt;div class="cell border-box-sizing code_cell rendered"&gt;
 &lt;div class="input"&gt;
-&lt;div class="prompt input_prompt"&gt;In&amp;nbsp;[&amp;nbsp;]:&lt;/div&gt;
+&lt;div class="prompt input_prompt"&gt;In&amp;nbsp;[1]:&lt;/div&gt;
 &lt;div class="inner_cell"&gt;
     &lt;div class="input_area"&gt;
 &lt;div class=" highlight hl-ipython2"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;sys&lt;/span&gt;
@@ -1243,7 +1252,7 @@ h6:hover .anchor-link {
 &lt;p&gt;&lt;code&gt;main_learning_pp&lt;/code&gt; is really just a very basic pipeline, with one &lt;code&gt;1d-pre-proces&lt;/code&gt; step to scale numerical features, one PCA dimensionality reduction, and finaly one lineare model. As discussed above, I wrap this into a &lt;code&gt;TransformingPredictorPipeline&lt;/code&gt; in order to make it behave like a transformer.&lt;/p&gt;
 &lt;p&gt;The main point of this example is what comes next: we can now place the two supplementary post-processors as promised: &lt;code&gt;to_integer&lt;/code&gt; and &lt;code&gt;to_non_negative&lt;/code&gt;.&lt;/p&gt;
 &lt;p&gt;Finaly, in order to be able to score this as part of a cross-validation loop, we need this to behave like predictor, so we wrap it again, this time within &lt;code&gt;TransformingPredictorPipeline&lt;/code&gt;.&lt;/p&gt;
-&lt;p&gt;&lt;img width="640" align="middle" src="images/scikit-learn-pipeline-post-processing_sk_final_pipeline.svg" /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="images/scikit-learn-pipeline-post-processing_sk_pipeline_final_pipeline.png" alt="example pipeline with post-processors"&gt;&lt;/p&gt;
 &lt;p&gt;An example usage is provided below:&lt;/p&gt;
 
 &lt;/div&gt;
@@ -1316,7 +1325,25 @@ h6:hover .anchor-link {
     (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
 }
 &lt;/script&gt;
-</summary><category term="scikit-learn"></category><category term="machine-learning"></category></entry><entry><title>How to normalize log-likelihood vectors</title><link href="https://svendx4f.github.io/how-to-normalize-log-likelihood-vectors.html" rel="alternate"></link><published>2016-10-02T18:29:00+02:00</published><updated>2016-10-02T18:29:00+02:00</updated><author><name>Svend Vanderveken</name></author><id>tag:svendx4f.github.io,2016-10-02:how-to-normalize-log-likelihood-vectors.html</id><summary type="html">&lt;style type="text/css"&gt;/*!
+</content><category term="scikit-learn"></category><category term="machine-learning"></category></entry><entry><title>How to normalize log-likelihood vectors</title><link href="https://svendx4f.github.io/how-to-normalize-log-likelihood-vectors.html" rel="alternate"></link><published>2016-10-02T18:29:00+02:00</published><updated>2016-10-02T18:29:00+02:00</updated><author><name>Svend Vanderveken</name></author><id>tag:svendx4f.github.io,2016-10-02:/how-to-normalize-log-likelihood-vectors.html</id><summary type="html">
+&lt;div class="cell border-box-sizing text_cell rendered"&gt;
+&lt;div class="prompt input_prompt"&gt;
+&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+&lt;div class="text_cell_render border-box-sizing rendered_html"&gt;
+&lt;p&gt;What is the best way to convert a log-likelihood vector into the corresponding log-probability vector, i.e. a vector of values whose exponential sum up to one?&lt;/p&gt;
+&lt;p&gt;TLDR: just subtract the &lt;code&gt;scipy.misc.logsumexp()&lt;/code&gt; of that vector.&lt;/p&gt;
+&lt;p&gt;Note: this notebook is &lt;a href="https://github.com/svendx4f/svendx4f.github.io/blob/dev/content/how_to_normalize_likelihood_vectors.ipynb"&gt;available on Github&lt;/a&gt; in case you want to play around with it.&lt;/p&gt;
+
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="cell border-box-sizing text_cell rendered"&gt;
+&lt;div class="prompt input_prompt"&gt;
+&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+&lt;div class="text_cell_render border-box-sizing rendered_html"&gt;
+&lt;h2 id="Usage-of-logs-in-probability-and-likelihood-computations"&gt;Usage of logs in probability and likelihood computations&lt;a class="anchor-link" href="#Usage-of-logs-in-probability-and-likelihood-computations"&gt;&amp;#182;&lt;/a&gt;</summary><content type="html">&lt;style type="text/css"&gt;/*!
 *
 * IPython notebook
 *
@@ -2235,8 +2262,10 @@ h6:hover .anchor-link {
 .highlight .mh { color: #666666 } /* Literal.Number.Hex */
 .highlight .mi { color: #666666 } /* Literal.Number.Integer */
 .highlight .mo { color: #666666 } /* Literal.Number.Oct */
+.highlight .sa { color: #BA2121 } /* Literal.String.Affix */
 .highlight .sb { color: #BA2121 } /* Literal.String.Backtick */
 .highlight .sc { color: #BA2121 } /* Literal.String.Char */
+.highlight .dl { color: #BA2121 } /* Literal.String.Delimiter */
 .highlight .sd { color: #BA2121; font-style: italic } /* Literal.String.Doc */
 .highlight .s2 { color: #BA2121 } /* Literal.String.Double */
 .highlight .se { color: #BB6622; font-weight: bold } /* Literal.String.Escape */
@@ -2247,9 +2276,11 @@ h6:hover .anchor-link {
 .highlight .s1 { color: #BA2121 } /* Literal.String.Single */
 .highlight .ss { color: #19177C } /* Literal.String.Symbol */
 .highlight .bp { color: #008000 } /* Name.Builtin.Pseudo */
+.highlight .fm { color: #0000FF } /* Name.Function.Magic */
 .highlight .vc { color: #19177C } /* Name.Variable.Class */
 .highlight .vg { color: #19177C } /* Name.Variable.Global */
 .highlight .vi { color: #19177C } /* Name.Variable.Instance */
+.highlight .vm { color: #19177C } /* Name.Variable.Magic */
 .highlight .il { color: #666666 } /* Literal.Number.Integer.Long */&lt;/style&gt;
 &lt;style type="text/css"&gt;
 /* Temporary definitions which will become obsolete with Notebook release 5.0 */
@@ -2293,7 +2324,7 @@ h6:hover .anchor-link {
 &lt;/div&gt;
 &lt;div class="inner_cell"&gt;
 &lt;div class="text_cell_render border-box-sizing rendered_html"&gt;
-&lt;h1 id="How-to-normalize-log-likelihood-vectors"&gt;How to normalize log-likelihood vectors&lt;a class="anchor-link" href="#How-to-normalize-log-likelihood-vectors"&gt;&amp;#182;&lt;/a&gt;&lt;/h1&gt;&lt;p&gt;What is the best way to convert a log-likelihood vector into the corresponding log-probability vector, i.e. a vector of values whose exponential sum up to one?&lt;/p&gt;
+&lt;p&gt;What is the best way to convert a log-likelihood vector into the corresponding log-probability vector, i.e. a vector of values whose exponential sum up to one?&lt;/p&gt;
 &lt;p&gt;TLDR: just subtract the &lt;code&gt;scipy.misc.logsumexp()&lt;/code&gt; of that vector.&lt;/p&gt;
 &lt;p&gt;Note: this notebook is &lt;a href="https://github.com/svendx4f/svendx4f.github.io/blob/dev/content/how_to_normalize_likelihood_vectors.ipynb"&gt;available on Github&lt;/a&gt; in case you want to play around with it.&lt;/p&gt;
 
@@ -3902,4 +3933,4 @@ BCAAAQhAAAIQgAAEkkrg/wAfhAQTieVlmwAAAABJRU5ErkJggg==
     (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
 }
 &lt;/script&gt;
-</summary><category term="probability"></category><category term="scipy"></category><category term="python"></category></entry></feed>
+</content><category term="probability"></category><category term="scipy"></category><category term="python"></category></entry></feed>

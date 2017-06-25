@@ -1,43 +1,66 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-        <meta charset="utf-8" />
-        <title>Using model post-processor within scikit-learn pipelines</title>
-        <link rel="stylesheet" href="https://svendx4f.github.io/theme/css/main.css" />
-        <link href="https://svendx4f.github.io/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Svend's blog Atom Feed" />
+	<head>
+		<link href="http://gmpg.org/xfn/11" rel="profile">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta http-equiv="content-type" content="text/html; charset=utf-8">
 
-        <!--[if IE]>
-            <script src="https://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-        <![endif]-->
-</head>
+		<!-- Enable responsiveness on mobile devices-->
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 
-<body id="index" class="home">
-        <header id="banner" class="body">
-                <h1><a href="https://svendx4f.github.io/">Svend's blog </a></h1>
-                <nav><ul>
-                    <li class="active"><a href="https://svendx4f.github.io/category/data.html">data</a></li>
-                </ul></nav>
-        </header><!-- /#banner -->
-<section id="content" class="body">
-  <article>
-    <header>
-      <h1 class="entry-title">
-        <a href="https://svendx4f.github.io/using-model-post-processor-within-scikit-learn-pipelines.html" rel="bookmark"
-           title="Permalink to Using model post-processor within scikit-learn pipelines">Using model post-processor within scikit-learn pipelines</a></h1>
-    </header>
+		<title>Svend Vanderveken</title>
 
-    <div class="entry-content">
-<footer class="post-info">
-        <abbr class="published" title="2016-10-18T14:22:00+02:00">
-                Published: Tue 18 October 2016
-        </abbr>
+		<!-- CSS -->
+		<link href="//fonts.googleapis.com/" rel="dns-prefetch">
+		<link href="//fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic|Abril+Fatface|PT+Sans:400,400italic,700&amp;subset=latin,latin-ext" rel="stylesheet">
 
-        <address class="vcard author">
-                By                         <a class="url fn" href="https://svendx4f.github.io/author/svend-vanderveken.html">Svend Vanderveken</a>
-        </address>
-<p>In <a href="https://svendx4f.github.io/category/data.html">data</a>.</p>
-<p>tags: <a href="https://svendx4f.github.io/tag/scikit-learn.html">scikit-learn</a> <a href="https://svendx4f.github.io/tag/machine-learning.html">machine-learning</a> </p>
-</footer><!-- /.post-info -->      <style type="text/css">/*!
+		<link rel="stylesheet" href="https://svendx4f.github.io/theme/css/poole.css" />
+		<link rel="stylesheet" href="https://svendx4f.github.io/theme/css/hyde.css" />
+		<link rel="stylesheet" href="https://svendx4f.github.io/theme/css/syntax.css" />
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+
+		<!-- RSS -->
+		<link rel="alternate" type="application/rss+xml" title="RSS" href="/atom.xml">
+	</head>
+
+	<body class="theme-base-0d">
+<div class="sidebar">
+	<div class="container sidebar-sticky">
+		<div class="sidebar-about">
+
+			<h1>
+				<a href="/">
+					<img class="profile-picture" src="https://svendx4f.github.io/images/blog/svend.jpg">
+					Svend Vanderveken
+				</a>
+			</h1>
+			<p class="lead"></p>
+			<p class="lead">I am a freelance Data Engineer, I focus on scalable data processing pipelines based on Spark, Kafka, Cassandra... I love to code, preferably in Scala, Python and SQL. </p>
+			<p></p>
+		</div>
+		<nav class="sidebar-nav">
+					<a class="sidebar-nav-item" href="https://github.com/svendx4f">
+						<i class="fa fa-github"></i>
+					</a>
+					<a class="sidebar-nav-item" href="https://twitter.com/svend_x4f">
+						<i class="fa fa-twitter"></i>
+					</a>
+					<a class="sidebar-nav-item" href="https://be.linkedin.com/in/vanderveken">
+						<i class="fa fa-linkedin"></i>
+					</a>
+					<a class="sidebar-nav-item" href="http://stackoverflow.com/users/3318335/svend">
+						<i class="fa fa-stack-overflow"></i>
+					</a>
+			<a class="sidebar-nav-item" href="">
+				<i class="fa fa-feed"></i>
+			</a>
+		</nav>
+	</div>
+</div>		<div class="content container">
+<div class="post">
+	<h1 class="post-title">Using model post-processor within scikit-learn pipelines</h1>
+	<span class="post-date">Tue 18 October 2016</span>
+	<style type="text/css">/*!
 *
 * IPython notebook
 *
@@ -956,8 +979,10 @@ h6:hover .anchor-link {
 .highlight .mh { color: #666666 } /* Literal.Number.Hex */
 .highlight .mi { color: #666666 } /* Literal.Number.Integer */
 .highlight .mo { color: #666666 } /* Literal.Number.Oct */
+.highlight .sa { color: #BA2121 } /* Literal.String.Affix */
 .highlight .sb { color: #BA2121 } /* Literal.String.Backtick */
 .highlight .sc { color: #BA2121 } /* Literal.String.Char */
+.highlight .dl { color: #BA2121 } /* Literal.String.Delimiter */
 .highlight .sd { color: #BA2121; font-style: italic } /* Literal.String.Doc */
 .highlight .s2 { color: #BA2121 } /* Literal.String.Double */
 .highlight .se { color: #BB6622; font-weight: bold } /* Literal.String.Escape */
@@ -968,9 +993,11 @@ h6:hover .anchor-link {
 .highlight .s1 { color: #BA2121 } /* Literal.String.Single */
 .highlight .ss { color: #19177C } /* Literal.String.Symbol */
 .highlight .bp { color: #008000 } /* Name.Builtin.Pseudo */
+.highlight .fm { color: #0000FF } /* Name.Function.Magic */
 .highlight .vc { color: #19177C } /* Name.Variable.Class */
 .highlight .vg { color: #19177C } /* Name.Variable.Global */
 .highlight .vi { color: #19177C } /* Name.Variable.Instance */
+.highlight .vm { color: #19177C } /* Name.Variable.Magic */
 .highlight .il { color: #666666 } /* Literal.Number.Integer.Long */</style>
 <style type="text/css">
 /* Temporary definitions which will become obsolete with Notebook release 5.0 */
@@ -1014,7 +1041,7 @@ h6:hover .anchor-link {
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h1 id="On-the-lack-of-post-processors">On the lack of post-processors<a class="anchor-link" href="#On-the-lack-of-post-processors">&#182;</a></h1><p><a href="http://scikit-learn.org/stable/modules/pipeline.html#pipeline">Pipelines</a> are a very handy and central feature of the scikit-learn library that enable to chain sequences, or even, in a limited way, DAGs, of data transformers and one machine learning model. They greatly facilitate the application of cross-validation scoring or hyper-parameter search on the resulting pipeline as a whole. They also ease the productization of a machine learning exercise by providing one single encapsulated trained model that can be applied as one instance on a test set or integrated into a production product.</p>
+<h2 id="On-the-lack-of-post-processors">On the lack of post-processors<a class="anchor-link" href="#On-the-lack-of-post-processors">&#182;</a></h2><p><a href="http://scikit-learn.org/stable/modules/pipeline.html#pipeline">Pipelines</a> are a very handy and central feature of the scikit-learn library that enable to chain sequences, or even, in a limited way, DAGs, of data transformers and one machine learning model. They greatly facilitate the application of cross-validation scoring or hyper-parameter search on the resulting pipeline as a whole. They also ease the productization of a machine learning exercise by providing one single encapsulated trained model that can be applied as one instance on a test set or integrated into a production product.</p>
 <p>For a very clear introduction, see also the excellent <a href="http://zacstewart.com/2014/08/05/pipelines-of-featureunions-of-pipelines.html">Using scikit-learn Pipelines and FeatureUnions</a> blog post by Zac Stewart.</p>
 
 </div>
@@ -1030,7 +1057,7 @@ h6:hover .anchor-link {
 <li>each element of the pipeline, except maybe the last one, must be <em>transformers</em>, i.e. provide a <code>transform(X)</code> method</li>
 <li>the last element of a pipeline can either be a <em>transformer</em>, in which case the result behaves like a grand-unified transformer, or a <em>predictor</em>, i.e. a element providing a <code>predict()</code> or <code>predict_proba()</code> (this is a simplification, see the actual API for details). In the later case, the resulting pipeline behaves like a predictor, can be used for scoring and can be used in a cross-validation pipeline. </li>
 </ul>
-<p><img width="640" align="middle" src="images/scikit-learn-pipeline-post-processing_sk_pipeline.svg" /></p>
+<p><img src="images/scikit-learn-pipeline-post-processing_sk_pipeline.png" alt="scikit-learn pipeline"></p>
 <p>I am not knowledgeable about nor experienced with  the scikit-learn architecure to understand the rationale of this choice. My naive reaction is that the distinction between the three functions (<code>transform()</code>, <code>predict()</code>and <code>predict_proba()</code> is of importance for other parts of the architecture, or present for historical reasons. My first apporach to this is that maybe just a single <code>transform()</code> function would have been enough and allows more composition flexibility.</p>
 
 </div>
@@ -1045,12 +1072,12 @@ h6:hover .anchor-link {
 <ul>
 <li><p>To force a prediction to be within a known validity domain. For example, in <a href="https://www.kaggle.com/c/bike-sharing-demand">this Kaggle tutorial</a>, the output of the model is a count of bike usage events, so it must be integer and non-negative. If I use a model that does not guarantee that (say, a simple linear model), I'd like to be able to pipe the result into a transformer <em>before</em> scoring the result.</p>
 </li>
-<li><p>Another (rather theoretical) example is simple composed models, like logistic regression, which stricto-senso is a linear model piped into a sigmoid transformer.</p>
+<li><p>Another (rather theoretical) example is simple composed models, like logistic regression, which stricto-senso is a learning model piped into a sigmoid transformer.</p>
 </li>
 </ul>
-<p><img align="middle" src="images/scikit-learn-pipeline-post-processing_sk_lin_reg.png" /></p>
+<p><img src="images/scikit-learn-pipeline-post-processing_sk_pipeline_lin_reg.png" alt="linear regression"></p>
 <ul>
-<li>Finall, model calibration techniques, like adjusting predicted probability to proportions actually observed within a validation set, could be implemented as post-processors.</li>
+<li>Finall, model calibration techniques, like adjusting predicted probability to actually observed proportion within a validation set, could be implemented as post-processors.</li>
 </ul>
 
 </div>
@@ -1063,9 +1090,9 @@ h6:hover .anchor-link {
 <div class="text_cell_render border-box-sizing rendered_html">
 <h2 id="Existing-workarounds">Existing workarounds<a class="anchor-link" href="#Existing-workarounds">&#182;</a></h2><p>Before introducing the simple wrappers I coded below, let's clarify that those "limitation" are not a showstopper.</p>
 <p>In the Kaggle example I gave above, an easy workaround consists in writting a custom scoring method that post-processes the model output before actually scoring it. This enables to have a correct score in each fold of the cross-validation loop:</p>
-<p><img width="640" align="middle" src="images/scikit-learn-pipeline-post-processing_sk_xval.svg" /></p>
+<p><img src="images/scikit-learn-pipeline-post-processing_sk_pipeline_sk_cross_val.png" alt="post-processing in scorer"></p>
 <p>In the case of logistic regression, <a href="http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html">Scikit-learn is of course providing an implementation that includes the sigmoid as art of the model itself</a>, this is working perfectly fine and poses no issues. My only point here is that if one was to re-implement a logistic regression algorithm today, this person would not be able to break it down as a several steps of a scikit-learn pipeline.</p>
-<p><img width="640" align="middle" src="images/scikit-learn-pipeline-post-processing_lin_reg_pipe.png" /></p>
+<p><img src="images/scikit-learn-pipeline-post-processing_sk_pipeline_sk_lin_reg_pipe.png" alt="scikit-learn linear regression"></p>
 <p>In both cases, in term of software design we can see that the concept of transformation <em>leaks</em> from the transformer itself to the nearest adjacent elements in the pipeline, either the scoring method or the model itself.</p>
 
 </div>
@@ -1077,7 +1104,7 @@ h6:hover .anchor-link {
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
 <h2 id="Allowing-models-anywhere-in-the-pipeline">Allowing models anywhere in the pipeline<a class="anchor-link" href="#Allowing-models-anywhere-in-the-pipeline">&#182;</a></h2><p>A more general solution is to wrap the model such that it behaves like a tranformer. I'm not the author of this idea, some places where it has been hinted before are <a href="https://github.com/scikit-learn/scikit-learn/issues/4143">here</a> and <a href="https://github.com/scikit-learn/scikit-learn/pull/4552">here</a>, among others.</p>
-<p>The class below achieves that very simply, by re-routing calls to <code>transform()</code> to the underlying pipeline <code>predict()</code>:</p>
+<p>The class below achieves that very simply, by re-routing calls to <code>transform</code> to the underlying pipeline <code>predict()</code>:</p>
 
 </div>
 </div>
@@ -1096,8 +1123,8 @@ h6:hover .anchor-link {
 <span class="sd">    This seemed to work when I tested it on scikit-learn 0.18, but you&#39;d rather not believe me.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">steps</span><span class="p">):</span>
-        <span class="n">Pipeline</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">steps</span><span class="p">)</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">steps</span><span class="p">):</span>
+        <span class="n">Pipeline</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">steps</span><span class="p">)</span>
         
     <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>    
@@ -1136,15 +1163,14 @@ h6:hover .anchor-link {
 <span class="sd">    This seemed to work when I tested it on scikit-learn 0.18, but you&#39;d rather not believe me.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">steps</span><span class="p">):</span>
-        <span class="n">Pipeline</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">steps</span><span class="p">)</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">steps</span><span class="p">):</span>
+        <span class="n">Pipeline</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">steps</span><span class="p">)</span>
         
     <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
     
     <span class="k">def</span> <span class="nf">fit_predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">fit_params</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="o">**</span><span class="n">fit_params</span><span class="p">)</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>    
-    
 </pre></div>
 
 </div>
@@ -1184,7 +1210,7 @@ h6:hover .anchor-link {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="prompt input_prompt">In&nbsp;[1]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
@@ -1281,7 +1307,7 @@ h6:hover .anchor-link {
 <p><code>main_learning_pp</code> is really just a very basic pipeline, with one <code>1d-pre-proces</code> step to scale numerical features, one PCA dimensionality reduction, and finaly one lineare model. As discussed above, I wrap this into a <code>TransformingPredictorPipeline</code> in order to make it behave like a transformer.</p>
 <p>The main point of this example is what comes next: we can now place the two supplementary post-processors as promised: <code>to_integer</code> and <code>to_non_negative</code>.</p>
 <p>Finaly, in order to be able to score this as part of a cross-validation loop, we need this to behave like predictor, so we wrap it again, this time within <code>TransformingPredictorPipeline</code>.</p>
-<p><img width="640" align="middle" src="images/scikit-learn-pipeline-post-processing_sk_final_pipeline.svg" /></p>
+<p><img src="images/scikit-learn-pipeline-post-processing_sk_pipeline_final_pipeline.png" alt="example pipeline with post-processors"></p>
 <p>An example usage is provided below:</p>
 
 </div>
@@ -1355,55 +1381,17 @@ h6:hover .anchor-link {
 }
 </script>
 
-    </div><!-- /.entry-content -->
-    <div class="comments">
-      <h2>Comments !</h2>
-      <div id="disqus_thread"></div>
-      <script type="text/javascript">
-        var disqus_shortname = 'svend-blog';
-        var disqus_identifier = 'using-model-post-processor-within-scikit-learn-pipelines.html';
-        var disqus_url = 'https://svendx4f.github.io/using-model-post-processor-within-scikit-learn-pipelines.html';
-        (function() {
-        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
-        dsq.src = '//svend-blog.disqus.com/embed.js';
-        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
-        })();
-      </script>
-      <noscript>Please enable JavaScript to view the comments.</noscript>
-    </div>
-
-  </article>
-</section>
-        <section id="extras" class="body">
-                <div class="social">
-                        <h2>social</h2>
-                        <ul>
-                            <li><a href="https://svendx4f.github.io/feeds/all.atom.xml" type="application/atom+xml" rel="alternate">atom feed</a></li>
-
-                            <li><a href="https://github.com/svendx4f">Svend's Github profile</a></li>
-                            <li><a href="https://twitter.com/svend_x4f">Svend's Twitter feed</a></li>
-                            <li><a href="https://be.linkedin.com/in/vanderveken">Svend's LinkedIn profile</a></li>
-                            <li><a href="http://stackoverflow.com/users/3318335/svend">Svend's StackOverflow profile</a></li>
-                        </ul>
-                </div><!-- /.social -->
-        </section><!-- /#extras -->
-
-        <footer id="contentinfo" class="body">
-                <address id="about" class="vcard body">
-                Proudly powered by <a href="http://getpelican.com/">Pelican</a>, which takes great advantage of <a href="http://python.org">Python</a>.
-                </address><!-- /#about -->
-
-                <p>The theme is by <a href="http://coding.smashingmagazine.com/2009/08/04/designing-a-html-5-layout-from-scratch/">Smashing Magazine</a>, thanks!</p>
-        </footer><!-- /#contentinfo -->
-
-<script type="text/javascript">
-    var disqus_shortname = 'svend-blog';
-    (function () {
-        var s = document.createElement('script'); s.async = true;
-        s.type = 'text/javascript';
-        s.src = 'https://' + disqus_shortname + '.disqus.com/count.js';
-        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
-    }());
-</script>
-</body>
+	<div id="disqus_thread"></div>
+		<script type="text/javascript">
+			var disqus_shortname = 'svend-blog';
+			(function() {
+	 			var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+	 			dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+	 			(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+	 		})();
+		</script>
+	<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+</div>
+		</div>
+	</body>
 </html>
