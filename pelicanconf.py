@@ -22,7 +22,7 @@ AUTHOR_FEED_RSS = None
 # Blogroll
 LINKS = ()
 
-# Social widget
+# Social widget (any font name from http://fontawesome.io/icons/ should work here)
 SOCIAL = (
          ("github", 'https://github.com/svendx4f'),
      	 ("twitter", 'https://twitter.com/svend_x4f'),
@@ -30,6 +30,7 @@ SOCIAL = (
      	 ("stack-overflow", 'http://stackoverflow.com/users/3318335/svend'),
          )
 
+GOOGLE_ANALYTICS = 'UA-101598127-1'
 
 SUMMARY_MAX_LENGTH = 50
 
