@@ -1,5 +1,105 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Svend Vanderveken</title><link href="https://svendx4f.github.io/" rel="alternate"></link><link href="https://svendx4f.github.io/feeds/all.atom.xml" rel="self"></link><id>https://svendx4f.github.io/</id><updated>2016-10-18T14:22:00+02:00</updated><entry><title>Using model post-processor within scikit-learn pipelines</title><link href="https://svendx4f.github.io/using-model-post-processor-within-scikit-learn-pipelines.html" rel="alternate"></link><published>2016-10-18T14:22:00+02:00</published><updated>2016-10-18T14:22:00+02:00</updated><author><name>Svend Vanderveken</name></author><id>tag:svendx4f.github.io,2016-10-18:/using-model-post-processor-within-scikit-learn-pipelines.html</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Svend Vanderveken</title><link href="https://svendx4f.github.io/" rel="alternate"></link><link href="https://svendx4f.github.io/feeds/all.atom.xml" rel="self"></link><id>https://svendx4f.github.io/</id><updated>2017-06-26T00:00:00+02:00</updated><entry><title>Sending Avro records from Scala to Azure eventhub over AMQP</title><link href="https://svendx4f.github.io/sending-avro-records-from-scala-to-azure-eventhub-over-amqp.html" rel="alternate"></link><published>2017-06-26T00:00:00+02:00</published><updated>2017-06-26T00:00:00+02:00</updated><author><name>Svend Vanderveken</name></author><id>tag:svendx4f.github.io,2017-06-26:/sending-avro-records-from-scala-to-azure-eventhub-over-amqp.html</id><summary type="html">&lt;p&gt;This post illustrates how to emit Avro records to Azure EventHub from scala in such a way that they are directly parsed by the other service of the Azure platform (e.g. Azure Stream Analytics). &lt;/p&gt;
+&lt;p&gt;There exists a Java API for communicating with Azure EventHub which is documented as part …&lt;/p&gt;</summary><content type="html">&lt;p&gt;This post illustrates how to emit Avro records to Azure EventHub from scala in such a way that they are directly parsed by the other service of the Azure platform (e.g. Azure Stream Analytics). &lt;/p&gt;
+&lt;p&gt;There exists a Java API for communicating with Azure EventHub which is documented as part of the &lt;a href="https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-java-get-started-send"&gt;azure documentation&lt;/a&gt; and even made &lt;a href="https://github.com/Azure/azure-event-hubs-java"&gt;open source on github&lt;/a&gt; (things have changed at Microsoft...). That said, the most detailed documentation still seems to be based on the .NET API as manipulated with Visual Studio on Windows. Me being a Scala developer on a Mac, it took me a bit of experimentation to emit Avro messages to EventHub and have an Azure Stream Analytics job parse it correctly.&lt;/p&gt;
+&lt;p&gt;The steps below assume that you have access to the Azure portal and have created an EventHub namespace as well as an EventHub instance. If not, see the &lt;a href="https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-create"&gt;Azure documentation here&lt;/a&gt; for details.&lt;/p&gt;
+&lt;p&gt;I posted a fully working example &lt;a href="https://github.com/svendx4f/avro-eventhub-scala-example"&gt;here on github&lt;/a&gt;.&lt;/p&gt;
+&lt;h2&gt;Scala Avro record emitter&lt;/h2&gt;
+&lt;p&gt;In a nutshell, these are the few things to know when sending Avro to Azure EventHub: &lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Each message sent to Azure is wrapped as part of an instance of &lt;a href="https://github.com/Azure/azure-event-hubs-java/blob/dev/azure-eventhubs/src/main/java/com/microsoft/azure/eventhubs/EventData.java"&gt;EventData&lt;/a&gt;, which also contains meta-data regarding the AMQP transmission.&lt;/li&gt;
+&lt;li&gt;The &lt;code&gt;byte[]&lt;/code&gt; payload that we wrap inside an &lt;code&gt;EventData&lt;/code&gt; instance should be a serialized Avro &lt;em&gt;file&lt;/em&gt;, i.e. contain the Avro schema. This means we should use the Avro &lt;a href="https://github.com/apache/avro/blob/branch-1.8/lang/java/avro/src/main/java/org/apache/avro/file/DataFileWriter.java"&gt;DataFileWriter&lt;/a&gt; and serialize the output directly to an output stream to obtain the &lt;code&gt;byte[]&lt;/code&gt;.&lt;/li&gt;
+&lt;li&gt;As for any Avro file, it is possible, and actually a very good idea, to put several avro records within the &lt;code&gt;EventData&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Based on my experimentations, only uncompressed Avro records or records compressed with &lt;a href="https://en.wikipedia.org/wiki/DEFLATE"&gt;Deflate&lt;/a&gt; seem to be currently supported by Azure. During my tests, neither bzip2 nor Snappy could be read by the Stream Analytics job. &lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Here is an extract of the scala code (see &lt;a href="https://github.com/svendx4f/avro-eventhub-scala-example/blob/master/src/main/scala/org/svend/playground/EventHubAvroSender.scala"&gt;EventHubAvroSender on github&lt;/a&gt; for details)&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;com.microsoft.azure.eventhubs.&lt;/span&gt;&lt;span class="o"&gt;{&lt;/span&gt;&lt;span class="nc"&gt;EventData&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nc"&gt;EventHubClient&lt;/span&gt;&lt;span class="o"&gt;}&lt;/span&gt;
+&lt;span class="k"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;org.apache.avro.file.&lt;/span&gt;&lt;span class="o"&gt;{&lt;/span&gt;&lt;span class="nc"&gt;Codec&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nc"&gt;CodecFactory&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nc"&gt;DataFileWriter&lt;/span&gt;&lt;span class="o"&gt;}&lt;/span&gt;
+&lt;span class="k"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;org.apache.avro.generic.&lt;/span&gt;&lt;span class="o"&gt;{&lt;/span&gt;&lt;span class="nc"&gt;GenericDatumWriter&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nc"&gt;GenericRecord&lt;/span&gt;&lt;span class="o"&gt;}&lt;/span&gt;
+&lt;span class="k"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;scala.collection.JavaConverters._&lt;/span&gt;
+
+&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="kt"&gt;...&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;
+
+  &lt;span class="k"&gt;val&lt;/span&gt; &lt;span class="n"&gt;ehClient&lt;/span&gt; &lt;span class="k"&gt;=&lt;/span&gt; &lt;span class="nc"&gt;EventHubClient&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;createFromConnectionStringSync&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;&amp;lt;your eventhub connection string&amp;gt;&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
+
+  &lt;span class="c1"&gt;// number of batches to send to the EventHub&lt;/span&gt;
+  &lt;span class="k"&gt;val&lt;/span&gt; &lt;span class="n"&gt;batch_num&lt;/span&gt; &lt;span class="k"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;10&lt;/span&gt;
+
+  &lt;span class="c1"&gt;// number of EventData instances to put inside each batch&lt;/span&gt;
+  &lt;span class="k"&gt;val&lt;/span&gt; &lt;span class="n"&gt;amqpMessagePerBatch&lt;/span&gt; &lt;span class="k"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;15&lt;/span&gt;
+
+  &lt;span class="c1"&gt;// number of avro records to bundle inside each AMQP message&lt;/span&gt;
+  &lt;span class="k"&gt;val&lt;/span&gt; &lt;span class="n"&gt;userMessagesPerAmqp&lt;/span&gt; &lt;span class="k"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;20&lt;/span&gt;
+
+  &lt;span class="k"&gt;val&lt;/span&gt; &lt;span class="n"&gt;datumWriter&lt;/span&gt; &lt;span class="k"&gt;=&lt;/span&gt; &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="nc"&gt;GenericDatumWriter&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="kt"&gt;GenericRecord&lt;/span&gt;&lt;span class="o"&gt;](&lt;/span&gt;&lt;span class="nc"&gt;UserMessage&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;schema&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
+  &lt;span class="k"&gt;val&lt;/span&gt; &lt;span class="n"&gt;writer&lt;/span&gt; &lt;span class="k"&gt;=&lt;/span&gt; &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="nc"&gt;DataFileWriter&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="kt"&gt;GenericRecord&lt;/span&gt;&lt;span class="o"&gt;](&lt;/span&gt;&lt;span class="n"&gt;datumWriter&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
+
+  &lt;span class="c1"&gt;// only Deflate seems to be compatible with Azure at the moment &lt;/span&gt;
+  &lt;span class="n"&gt;writer&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;setCodec&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nc"&gt;CodecFactory&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;deflateCodec&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;9&lt;/span&gt;&lt;span class="o"&gt;))&lt;/span&gt;  
+  &lt;span class="c1"&gt;//writer.setCodec(CodecFactory.snappyCodec()) // not currently supported&lt;/span&gt;
+  &lt;span class="c1"&gt;//writer.setCodec(CodecFactory.bzip2Codec())  // not currently supported&lt;/span&gt;
+
+  &lt;span class="k"&gt;val&lt;/span&gt; &lt;span class="n"&gt;futures&lt;/span&gt; &lt;span class="k"&gt;=&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt; &lt;span class="n"&gt;to&lt;/span&gt; &lt;span class="n"&gt;batch_num&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
+    &lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;map&lt;/span&gt;&lt;span class="o"&gt;{&lt;/span&gt; &lt;span class="n"&gt;batchid&lt;/span&gt; &lt;span class="k"&gt;=&amp;gt;&lt;/span&gt;
+
+      &lt;span class="c1"&gt;// list of EventData instances, each with a bunch of Avro records&lt;/span&gt;
+      &lt;span class="k"&gt;val&lt;/span&gt; &lt;span class="n"&gt;eventHubMessages&lt;/span&gt; &lt;span class="k"&gt;=&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt; &lt;span class="n"&gt;to&lt;/span&gt; &lt;span class="n"&gt;amqpMessagePerBatch&lt;/span&gt;&lt;span class="o"&gt;).&lt;/span&gt;&lt;span class="n"&gt;map&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt; &lt;span class="k"&gt;_&lt;/span&gt; &lt;span class="k"&gt;=&amp;gt;&lt;/span&gt;
+
+        &lt;span class="k"&gt;val&lt;/span&gt; &lt;span class="n"&gt;bos&lt;/span&gt; &lt;span class="k"&gt;=&lt;/span&gt; &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="nc"&gt;ByteArrayOutputStream&lt;/span&gt;&lt;span class="o"&gt;()&lt;/span&gt;
+        &lt;span class="n"&gt;writer&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;create&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nc"&gt;UserMessage&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;schema&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;bos&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
+
+        &lt;span class="c1"&gt;// MessageGen.genMessage is a generator of random data&lt;/span&gt;
+        &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt; &lt;span class="n"&gt;to&lt;/span&gt; &lt;span class="n"&gt;userMessagesPerAmqp&lt;/span&gt;&lt;span class="o"&gt;).&lt;/span&gt;&lt;span class="n"&gt;foreach&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt; &lt;span class="k"&gt;_&lt;/span&gt; &lt;span class="k"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;writer&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;append&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nc"&gt;MessageGen&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;genMessage&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;toAvro&lt;/span&gt;&lt;span class="o"&gt;)}&lt;/span&gt;
+
+        &lt;span class="n"&gt;writer&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;close&lt;/span&gt;&lt;span class="o"&gt;()&lt;/span&gt;
+        &lt;span class="n"&gt;bos&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;close&lt;/span&gt;&lt;span class="o"&gt;()&lt;/span&gt;
+
+        &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="nc"&gt;EventData&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;bos&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;toByteArray&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
+      &lt;span class="o"&gt;}&lt;/span&gt;
+
+      &lt;span class="n"&gt;println&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s"&gt;s&amp;quot;sending batch &lt;/span&gt;&lt;span class="si"&gt;$batchid&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
+
+      &lt;span class="c1"&gt;// this sends a batch of EventData asynchronously and returns a Java Future&lt;/span&gt;
+      &lt;span class="n"&gt;ehClient&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;send&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;eventHubMessages&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;asJava&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
+    &lt;span class="o"&gt;}&lt;/span&gt;
+
+  &lt;span class="n"&gt;println&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;waiting for all futures before exiting...&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
+  &lt;span class="n"&gt;futures&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;foreach&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="k"&gt;_&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get&lt;/span&gt;&lt;span class="o"&gt;())&lt;/span&gt;
+
+  &lt;span class="n"&gt;println&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s"&gt;s&amp;quot;ok, closing&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
+  &lt;span class="n"&gt;ehClient&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;close&lt;/span&gt;&lt;span class="o"&gt;()&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Note that there are two batching mechanisms at play above: &lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;the set of &lt;code&gt;userMessagesPerAmqp&lt;/code&gt; avro records we put inside each &lt;code&gt;EventData&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;the set of &lt;code&gt;amqpMessagePerBatch&lt;/code&gt; AMQP messages that are sent as part of one AMQP batch&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;I did not investigate what was the ideal combination of those two.&lt;/p&gt;
+&lt;h2&gt;Stream Analytics Job&lt;/h2&gt;
+&lt;p&gt;Azure stream analytics usage is described in &lt;a href="https://docs.microsoft.com/en-us/azure/stream-analytics/"&gt;Azure documentation here&lt;/a&gt;, they essentially let you execute an on-going &lt;a href="https://docs.microsoft.com/en-us/azure/data-lake-analytics/data-lake-analytics-u-sql-get-started"&gt;U-SQL&lt;/a&gt; query on data streaming out of an EventHub instance, IotHub instance or Blob Storage and forward the result to various outputs.&lt;/p&gt;
+&lt;p&gt;&lt;center&gt;&lt;img src="images/sending-avro-events-to-azure-eventhub-from-scala/input-query-output.png"  width="400px" /&gt; &lt;/center&gt;&lt;/p&gt;
+&lt;p&gt;All fields of the Avro schema are available in the query, so based on our example schema: &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;
+  &lt;span class="nt"&gt;&amp;quot;namespace&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;svend.playground.user&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+  &lt;span class="nt"&gt;&amp;quot;type&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;record&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+  &lt;span class="nt"&gt;&amp;quot;name&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;User&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+  &lt;span class="nt"&gt;&amp;quot;fields&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;
+    &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="nt"&gt;&amp;quot;name&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;user_id&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;  &lt;span class="nt"&gt;&amp;quot;type&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;int&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;null&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;]},&lt;/span&gt;
+    &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="nt"&gt;&amp;quot;name&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;mood&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;  &lt;span class="nt"&gt;&amp;quot;type&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;string&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;null&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;]},&lt;/span&gt;
+    &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="nt"&gt;&amp;quot;name&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;message&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nt"&gt;&amp;quot;type&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;string&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;null&amp;quot;&lt;/span&gt;
+  &lt;span class="p"&gt;]&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;We can access each field as part of a query in the U-SQL editor of the Azure Stream Analytics Job: &lt;/p&gt;
+&lt;p&gt;&lt;center&gt;&lt;img src="images/sending-avro-events-to-azure-eventhub-from-scala/example_query.png"  width="280px" /&gt; &lt;/center&gt;&lt;/p&gt;
+&lt;p&gt;You might notice the presence of &lt;code&gt;EventEnqueuedUtcTime&lt;/code&gt; in the query above, this is one of the supplementary fields that Azure EventHub adds to each received event, as &lt;a href="https://docs.microsoft.com/en-us/azure/stream-analytics/stream-analytics-define-inputs"&gt;specified in the Azure documentation&lt;/a&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;center&gt;&lt;img src="images/sending-avro-events-to-azure-eventhub-from-scala/supplementary_usql_fields.png"  width="500px" /&gt; &lt;/center&gt;&lt;/p&gt;
+&lt;p&gt;Once everything is started, the Stream Analytics page on the Azure portal should start to show some process traffic: &lt;/p&gt;
+&lt;p&gt;&lt;center&gt;&lt;img src="images/sending-avro-events-to-azure-eventhub-from-scala/analytics_traffic.png"  width="500px" /&gt; &lt;/center&gt;&lt;/p&gt;</content><category term="avro"></category><category term="scala"></category><category term="azure"></category><category term="cloud"></category></entry><entry><title>Using model post-processor within scikit-learn pipelines</title><link href="https://svendx4f.github.io/using-model-post-processor-within-scikit-learn-pipelines.html" rel="alternate"></link><published>2016-10-18T14:22:00+02:00</published><updated>2016-10-18T14:22:00+02:00</updated><author><name>Svend Vanderveken</name></author><id>tag:svendx4f.github.io,2016-10-18:/using-model-post-processor-within-scikit-learn-pipelines.html</id><summary type="html">
 &lt;div class="cell border-box-sizing text_cell rendered"&gt;
 &lt;div class="prompt input_prompt"&gt;
 &lt;/div&gt;
