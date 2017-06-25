@@ -3,7 +3,7 @@
 from __future__ import unicode_literals
 
 AUTHOR = u'Svend Vanderveken'
-SITENAME = u"Svend's blog"
+SITENAME = u"Svend Vanderveken"
 SITEURL = ''
 
 PATH = 'content'
@@ -20,21 +20,25 @@ AUTHOR_FEED_ATOM = None
 AUTHOR_FEED_RSS = None
 
 # Blogroll
-LINKS = (
-        )
+LINKS = ()
 
 # Social widget
 SOCIAL = (
-         ("Svend's Github profile", 'https://github.com/svendx4f'),
-     	 ("Svend's Twitter feed", 'https://twitter.com/svend_x4f'),
-     	 ("Svend's LinkedIn profile", 'https://be.linkedin.com/in/vanderveken'),
-     	 ("Svend's StackOverflow profile", 'http://stackoverflow.com/users/3318335/svend'),
-          )
+         ("github", 'https://github.com/svendx4f'),
+     	 ("twitter", 'https://twitter.com/svend_x4f'),
+     	 ("linkedin", 'https://be.linkedin.com/in/vanderveken'),
+     	 ("stack-overflow", 'http://stackoverflow.com/users/3318335/svend'),
+         )
+
+
+SUMMARY_MAX_LENGTH = 50
 
 DEFAULT_PAGINATION = 5
 
 # Uncomment following line if you want document-relative URLs when developing
 #RELATIVE_URLS = True
+
+THEME = '/Users/svend/dev/perso/pelican_themes/pelican-hyde'
 
 MARKUP = ('md', 'ipynb')
 
@@ -42,4 +46,7 @@ PLUGIN_PATHS = ['./plugins']
 PLUGINS = [ 'ipynb.markup']
 
 IGNORE_FILES = [".ipynb_checkpoints"]
+
+BIO = "I am a freelance Data Engineer, I focus on scalable data processing pipelines based on Spark, Kafka, Cassandra... I love to code, preferably in Scala, Python and SQL."
+PROFILE_IMAGE = "blog/svend.jpg"
 
