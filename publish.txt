@@ -3,7 +3,7 @@ following instructions from: https://www.dataquest.io/blog/how-to-setup-a-data-s
 preview:
  pelican content
  cd output
- python -m pelican.server
+ python -m SimpleHTTPServer
 
 publish:
  pelican content -s publishconf.py
