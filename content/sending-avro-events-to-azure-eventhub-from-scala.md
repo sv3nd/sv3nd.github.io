@@ -3,9 +3,9 @@ Date: 2017-06-26
 Tags: avro, scala, azure, cloud
 Author: Svend Vanderveken
 
-This post illustrates how to emit Avro records to Azure EventHub from scala in such a way that they are directly parsed by the other service of the Azure platform (e.g. Azure Stream Analytics). 
+This post illustrates how to emit Avro records to Azure EventHub from scala in such a way that they are directly parsed by the other services of the Azure platform (e.g. Azure Stream Analytics). 
 
-There exists a Java API for communicating with Azure EventHub which is documented as part of the [azure documentation](https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-java-get-started-send) and even made [open source on github](https://github.com/Azure/azure-event-hubs-java) (things have changed at Microsoft...). That said, the most detailed documentation still seems to be based on the .NET API as manipulated with Visual Studio on Windows. Me being a Scala developer on a Mac, it took me a bit of experimentation to emit Avro messages to EventHub and have an Azure Stream Analytics job parse it correctly.
+There exists a Java API for communicating with Azure EventHub which is documented as part of the [azure documentation](https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-java-get-started-send) and even made [open source on github](https://github.com/Azure/azure-event-hubs-java) (things have changed at Microsoft...). That said, the most detailed documentation still seems to be based on the .NET API as manipulated with Visual Studio on Windows. Me being a Scala developer on a Mac, it took me a bit of experimentation to emit Avro messages to EventHub and have an Azure Stream Analytics job parse them correctly.
 
 The steps below assume that you have access to the Azure portal and have created an EventHub namespace as well as an EventHub instance. If not, see the [Azure documentation here](https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-create) for details.
 
