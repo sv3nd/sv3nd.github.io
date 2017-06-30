@@ -1,9 +1,149 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Svend Vanderveken - misc</title><link href="https://svendx4f.github.io/" rel="alternate"></link><link href="https://svendx4f.github.io/feeds/misc.atom.xml" rel="self"></link><id>https://svendx4f.github.io/</id><updated>2017-06-26T00:00:00+02:00</updated><entry><title>Sending Avro records from Scala to Azure eventhub over AMQP</title><link href="https://svendx4f.github.io/sending-avro-records-from-scala-to-azure-eventhub-over-amqp.html" rel="alternate"></link><published>2017-06-26T00:00:00+02:00</published><updated>2017-06-26T00:00:00+02:00</updated><author><name>Svend Vanderveken</name></author><id>tag:svendx4f.github.io,2017-06-26:/sending-avro-records-from-scala-to-azure-eventhub-over-amqp.html</id><summary type="html">&lt;p&gt;This post illustrates how to emit Avro records to Azure EventHub from scala in such a way that they are directly parsed by the other services of the Azure platform (e.g. Azure Stream Analytics). &lt;/p&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Svend Vanderveken - misc</title><link href="https://svendx4f.github.io/" rel="alternate"></link><link href="https://svendx4f.github.io/feeds/misc.atom.xml" rel="self"></link><id>https://svendx4f.github.io/</id><updated>2017-06-30T00:00:00+02:00</updated><entry><title>How to integrate Flink with Confluent's schema registry</title><link href="https://svendx4f.github.io/how-to-integrate-flink-with-confluents-schema-registry.html" rel="alternate"></link><published>2017-06-30T00:00:00+02:00</published><updated>2017-06-30T00:00:00+02:00</updated><author><name>Svend Vanderveken</name></author><id>tag:svendx4f.github.io,2017-06-30:/how-to-integrate-flink-with-confluents-schema-registry.html</id><summary type="html">&lt;p&gt;This post illustrates how to use Confluent's Avro serializer in order to let a Flink program consume and produce avro messages through Kafka while keeping track of the Avro Schemas in Confluent's schema registry. This can be interresting if the messages are pumped into or out of Kafka with Kafka …&lt;/p&gt;</summary><content type="html">&lt;p&gt;This post illustrates how to use Confluent's Avro serializer in order to let a Flink program consume and produce avro messages through Kafka while keeping track of the Avro Schemas in Confluent's schema registry. This can be interresting if the messages are pumped into or out of Kafka with Kafka Connect, Kafka Streams, or just with anything else also integrated with the schema registry.&lt;/p&gt;
+&lt;p&gt;This has been written with the following dependencies in mind: &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;libraryDependencies&lt;/span&gt; &lt;span class="o"&gt;++=&lt;/span&gt; &lt;span class="nc"&gt;Seq&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;
+  &lt;span class="s"&gt;&amp;quot;org.apache.flink&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;%%&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;flink-scala&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;%&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;1.3.1&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;%&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;provided&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt;
+  &lt;span class="s"&gt;&amp;quot;org.apache.flink&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;%%&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;flink-streaming-scala&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;%&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;1.3.1&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;%&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;provided&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt;
+  &lt;span class="s"&gt;&amp;quot;org.apache.flink&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;%%&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;flink-connector-kafka-0.10&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;%&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;1.3.1&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt;
+
+  &lt;span class="s"&gt;&amp;quot;io.confluent&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;%&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;kafka-avro-serializer&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;%&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;3.2.2&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h2&gt;Confluent's schema registry library&lt;/h2&gt;
+&lt;p&gt;Confluent has published their version of an &lt;a href="https://github.com/confluentinc/schema-registry/tree/3.2.1-post/avro-serializer"&gt;Avro Serializer&lt;/a&gt; which automatically (and idempotently) registers the Avro schema into the schema registry when performing serialization (as &lt;a href="https://github.com/confluentinc/schema-registry/blob/3.2.1-post/avro-serializer/src/main/java/io/confluent/kafka/serializers/AbstractKafkaAvroSerializer.java#L72"&gt;visible here&lt;/a&gt;). The convention they use is simply to declare 2 &lt;em&gt;subjects&lt;/em&gt; within the registry for each kafka topic, called &lt;em&gt;&amp;lt;topic-name&gt;-value&lt;/em&gt; and &lt;em&gt;&amp;lt;topic-name&gt;-key&lt;/em&gt; and put the schema there. This allows the de-serializer to &lt;a href="https://github.com/confluentinc/schema-registry/blob/3.2.1-post/avro-serializer/src/main/java/io/confluent/kafka/serializers/AbstractKafkaAvroDeserializer.java#L121"&gt;retrieve the schema when needed&lt;/a&gt;.&lt;/p&gt;
+&lt;h2&gt;Flink Kafka consumer&lt;/h2&gt;
+&lt;p&gt;There are various aspects to tackle when adding a Kafka consumer as a stream source to Flink. The one we're focusing on here is &lt;a href="https://ci.apache.org/projects/flink/flink-docs-release-1.3/dev/connectors/kafka.html#the-deserializationschema"&gt;the deserializations schema&lt;/a&gt;. This class is the place where we can specify to Flink how handle the &lt;code&gt;byte[]&lt;/code&gt; consumed from Kafka, so all we have to do is to plug there Confluent's schema-registry aware Avro deserializer. &lt;/p&gt;
+&lt;p&gt;It goes like this: &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;io.confluent.kafka.serializers.&lt;/span&gt;&lt;span class="o"&gt;{&lt;/span&gt;&lt;span class="nc"&gt;AbstractKafkaAvroSerDeConfig&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nc"&gt;KafkaAvroDeserializer&lt;/span&gt;&lt;span class="o"&gt;}&lt;/span&gt;
+&lt;span class="k"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;org.apache.avro.generic.GenericRecord&lt;/span&gt;
+&lt;span class="k"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;org.apache.flink.api.common.typeinfo.TypeInformation&lt;/span&gt;
+&lt;span class="k"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;org.apache.flink.api.java.typeutils.TypeExtractor&lt;/span&gt;
+&lt;span class="k"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;org.apache.flink.streaming.util.serialization.KeyedDeserializationSchema&lt;/span&gt;
+
+&lt;span class="k"&gt;case&lt;/span&gt; &lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;KafkaKV&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;key&lt;/span&gt;&lt;span class="k"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;GenericRecord&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;value&lt;/span&gt;&lt;span class="k"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;GenericRecord&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
+
+&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;ConfluentRegistryDeserialization&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;topic&lt;/span&gt;&lt;span class="k"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;String&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;schemaRegistryUrl&lt;/span&gt;&lt;span class="k"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;String&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; 
+      &lt;span class="k"&gt;extends&lt;/span&gt; &lt;span class="nc"&gt;KeyedDeserializationSchema&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="kt"&gt;KafkaKV&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+
+  &lt;span class="c1"&gt;// Flink needs the serializer to be serializable =&amp;gt; this &amp;quot;@transient lazy val&amp;quot; does the trick&lt;/span&gt;
+  &lt;span class="nd"&gt;@transient&lt;/span&gt; &lt;span class="k"&gt;lazy&lt;/span&gt; &lt;span class="k"&gt;val&lt;/span&gt; &lt;span class="n"&gt;valueDeserializer&lt;/span&gt; &lt;span class="k"&gt;=&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+    &lt;span class="k"&gt;val&lt;/span&gt; &lt;span class="n"&gt;deserializer&lt;/span&gt; &lt;span class="k"&gt;=&lt;/span&gt; &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="nc"&gt;KafkaAvroDeserializer&lt;/span&gt;&lt;span class="o"&gt;()&lt;/span&gt;
+    &lt;span class="n"&gt;deserializer&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;configure&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;
+      &lt;span class="c1"&gt;// other schema-registry configuration parameters can be passed, see the configure() code &lt;/span&gt;
+      &lt;span class="c1"&gt;// for details (among other things, schema cache size)&lt;/span&gt;
+      &lt;span class="nc"&gt;Map&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nc"&gt;AbstractKafkaAvroSerDeConfig&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="nc"&gt;SCHEMA_REGISTRY_URL_CONFIG&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;schemaRegistryUrl&lt;/span&gt;&lt;span class="o"&gt;).&lt;/span&gt;&lt;span class="n"&gt;asJava&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; 
+      &lt;span class="kc"&gt;false&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;deserializer&lt;/span&gt;
+  &lt;span class="o"&gt;}&lt;/span&gt;
+
+  &lt;span class="nd"&gt;@transient&lt;/span&gt; &lt;span class="k"&gt;lazy&lt;/span&gt; &lt;span class="k"&gt;val&lt;/span&gt; &lt;span class="n"&gt;keyDeserializer&lt;/span&gt; &lt;span class="k"&gt;=&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+    &lt;span class="k"&gt;val&lt;/span&gt; &lt;span class="n"&gt;deserializer&lt;/span&gt; &lt;span class="k"&gt;=&lt;/span&gt; &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="nc"&gt;KafkaAvroDeserializer&lt;/span&gt;&lt;span class="o"&gt;()&lt;/span&gt;
+    &lt;span class="n"&gt;deserializer&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;configure&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;
+      &lt;span class="nc"&gt;Map&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nc"&gt;AbstractKafkaAvroSerDeConfig&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="nc"&gt;SCHEMA_REGISTRY_URL_CONFIG&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;schemaRegistryUrl&lt;/span&gt;&lt;span class="o"&gt;).&lt;/span&gt;&lt;span class="n"&gt;asJava&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; 
+      &lt;span class="kc"&gt;true&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;deserializer&lt;/span&gt;
+  &lt;span class="o"&gt;}&lt;/span&gt;
+
+  &lt;span class="k"&gt;override&lt;/span&gt; &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="n"&gt;isEndOfStream&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;nextElement&lt;/span&gt;&lt;span class="k"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;KafkaKV&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;&lt;span class="k"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;Boolean&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="kc"&gt;false&lt;/span&gt;
+
+  &lt;span class="k"&gt;override&lt;/span&gt; &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="n"&gt;deserialize&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;messageKey&lt;/span&gt;&lt;span class="k"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;Array&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="kt"&gt;Byte&lt;/span&gt;&lt;span class="o"&gt;],&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="k"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;Array&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="kt"&gt;Byte&lt;/span&gt;&lt;span class="o"&gt;],&lt;/span&gt; 
+                           &lt;span class="n"&gt;topic&lt;/span&gt;&lt;span class="k"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;String&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;partition&lt;/span&gt;&lt;span class="k"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;Int&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;offset&lt;/span&gt;&lt;span class="k"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;Long&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;&lt;span class="k"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;KafkaKV&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+
+    &lt;span class="k"&gt;val&lt;/span&gt; &lt;span class="n"&gt;key&lt;/span&gt; &lt;span class="k"&gt;=&lt;/span&gt; &lt;span class="n"&gt;keyDeserializer&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;topic&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;messageKey&lt;/span&gt;&lt;span class="o"&gt;).&lt;/span&gt;&lt;span class="n"&gt;asInstanceOf&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="kt"&gt;GenericRecord&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;
+    &lt;span class="k"&gt;val&lt;/span&gt; &lt;span class="n"&gt;value&lt;/span&gt; &lt;span class="k"&gt;=&lt;/span&gt; &lt;span class="n"&gt;valueDeserializer&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;deserialize&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;topic&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="o"&gt;).&lt;/span&gt;&lt;span class="n"&gt;asInstanceOf&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="kt"&gt;GenericRecord&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;
+
+    &lt;span class="nc"&gt;KafkaKV&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;key&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;value&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
+  &lt;span class="o"&gt;}&lt;/span&gt;
+
+  &lt;span class="k"&gt;override&lt;/span&gt; &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="n"&gt;getProducedType&lt;/span&gt;&lt;span class="k"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;TypeInformation&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="kt"&gt;KafkaKV&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="k"&gt;=&lt;/span&gt; 
+      &lt;span class="nc"&gt;TypeExtractor&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;getForClass&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;classOf&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="kt"&gt;KafkaKV&lt;/span&gt;&lt;span class="o"&gt;])&lt;/span&gt;
+&lt;span class="o"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Once this is in place, we can use it to create a Flink Kafka source as follows: &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;  &lt;span class="k"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;org.apache.flink.api.scala._&lt;/span&gt;
+  &lt;span class="k"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;org.apache.flink.streaming.api.scala.StreamExecutionEnvironment&lt;/span&gt;
+  &lt;span class="k"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer010&lt;/span&gt;
+
+  &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="kt"&gt;...&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;
+
+  &lt;span class="k"&gt;val&lt;/span&gt; &lt;span class="n"&gt;env&lt;/span&gt; &lt;span class="k"&gt;=&lt;/span&gt; &lt;span class="nc"&gt;StreamExecutionEnvironment&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;getExecutionEnvironment&lt;/span&gt;
+
+  &lt;span class="k"&gt;val&lt;/span&gt; &lt;span class="n"&gt;kafkaConsumerConfig&lt;/span&gt; &lt;span class="k"&gt;=&lt;/span&gt; &lt;span class="o"&gt;...&lt;/span&gt;
+
+  &lt;span class="k"&gt;val&lt;/span&gt; &lt;span class="n"&gt;kafkaStream&lt;/span&gt; &lt;span class="k"&gt;=&lt;/span&gt; &lt;span class="n"&gt;env&lt;/span&gt;
+    &lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;addSource&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;
+      &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="nc"&gt;FlinkKafkaConsumer010&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="kt"&gt;KafkaKV&lt;/span&gt;&lt;span class="o"&gt;](&lt;/span&gt;
+        &lt;span class="s"&gt;&amp;quot;someInboundTopic&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt;
+        &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="nc"&gt;ConfluentRegistryDeserialization&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;someInboundTopic&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;http://localhost:8081&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;),&lt;/span&gt;
+        &lt;span class="n"&gt;kafkaConsumerConfig&lt;/span&gt;
+        &lt;span class="o"&gt;)&lt;/span&gt;
+      &lt;span class="o"&gt;)&lt;/span&gt;
+    &lt;span class="o"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h2&gt;Flink Kafka producer&lt;/h2&gt;
+&lt;p&gt;This is exactly the same story: in order to be able to produce avro messages into Kafka with Flink while automatically registering their schema in the registry, all we have to do is provide a Flink serializer that is essentially an adapter to Confluent's Avro serializer. &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;type&lt;/span&gt; &lt;span class="kt"&gt;KafkaKey&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nc"&gt;String&lt;/span&gt;
+&lt;span class="k"&gt;case&lt;/span&gt; &lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;SomePojo&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;foo&lt;/span&gt;&lt;span class="k"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;String&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;bar&lt;/span&gt;&lt;span class="k"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;String&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
+
+&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;ConfluentRegistrySerialization&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;topic&lt;/span&gt;&lt;span class="k"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;String&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;schemaRegistryUrl&lt;/span&gt;&lt;span class="k"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;String&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; 
+        &lt;span class="k"&gt;extends&lt;/span&gt; &lt;span class="nc"&gt;KeyedSerializationSchema&lt;/span&gt;&lt;span class="o"&gt;[(&lt;/span&gt;&lt;span class="kt"&gt;KafkaKey&lt;/span&gt;, &lt;span class="kt"&gt;SomePojo&lt;/span&gt;&lt;span class="o"&gt;)]{&lt;/span&gt;
+
+  &lt;span class="nd"&gt;@transient&lt;/span&gt; &lt;span class="k"&gt;lazy&lt;/span&gt; &lt;span class="k"&gt;val&lt;/span&gt; &lt;span class="n"&gt;valueSerializer&lt;/span&gt; &lt;span class="k"&gt;=&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+    &lt;span class="k"&gt;val&lt;/span&gt; &lt;span class="n"&gt;serializer&lt;/span&gt; &lt;span class="k"&gt;=&lt;/span&gt; &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="nc"&gt;KafkaAvroSerializer&lt;/span&gt;&lt;span class="o"&gt;()&lt;/span&gt;
+    &lt;span class="n"&gt;serializer&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;configure&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;
+      &lt;span class="nc"&gt;Map&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nc"&gt;AbstractKafkaAvroSerDeConfig&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="nc"&gt;SCHEMA_REGISTRY_URL_CONFIG&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;schemaRegistryUrl&lt;/span&gt;&lt;span class="o"&gt;).&lt;/span&gt;&lt;span class="n"&gt;asJava&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt;
+      &lt;span class="kc"&gt;false&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;serializer&lt;/span&gt;
+  &lt;span class="o"&gt;}&lt;/span&gt;
+
+  &lt;span class="nd"&gt;@transient&lt;/span&gt; &lt;span class="k"&gt;lazy&lt;/span&gt; &lt;span class="k"&gt;val&lt;/span&gt; &lt;span class="n"&gt;keySerializer&lt;/span&gt; &lt;span class="k"&gt;=&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+    &lt;span class="k"&gt;val&lt;/span&gt; &lt;span class="n"&gt;serializer&lt;/span&gt; &lt;span class="k"&gt;=&lt;/span&gt; &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="nc"&gt;KafkaAvroSerializer&lt;/span&gt;&lt;span class="o"&gt;()&lt;/span&gt;
+    &lt;span class="n"&gt;serializer&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;configure&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;
+      &lt;span class="nc"&gt;Map&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nc"&gt;AbstractKafkaAvroSerDeConfig&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="nc"&gt;SCHEMA_REGISTRY_URL_CONFIG&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;schemaRegistryUrl&lt;/span&gt;&lt;span class="o"&gt;).&lt;/span&gt;&lt;span class="n"&gt;asJava&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt;
+      &lt;span class="kc"&gt;true&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;serializer&lt;/span&gt;
+  &lt;span class="o"&gt;}&lt;/span&gt;
+
+  &lt;span class="k"&gt;override&lt;/span&gt; &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="n"&gt;serializeKey&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;keyedMessages&lt;/span&gt;&lt;span class="k"&gt;:&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;KafkaKey&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;SomePojo&lt;/span&gt;&lt;span class="o"&gt;))&lt;/span&gt;&lt;span class="k"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;Array&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="kt"&gt;Byte&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="k"&gt;=&lt;/span&gt;
+    &lt;span class="n"&gt;keySerializer&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;serialize&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;topic&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;keyedMessages&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;_1&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
+
+  &lt;span class="k"&gt;override&lt;/span&gt; &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="n"&gt;getTargetTopic&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;element&lt;/span&gt;&lt;span class="k"&gt;:&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;KafkaKey&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;SomePojo&lt;/span&gt;&lt;span class="o"&gt;))&lt;/span&gt;&lt;span class="k"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;String&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;topic&lt;/span&gt;
+
+  &lt;span class="k"&gt;override&lt;/span&gt; &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="n"&gt;serializeValue&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;keyedMessages&lt;/span&gt;&lt;span class="k"&gt;:&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;KafkaKey&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;SomePojo&lt;/span&gt;&lt;span class="o"&gt;))&lt;/span&gt;&lt;span class="k"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;Array&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="kt"&gt;Byte&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="k"&gt;=&lt;/span&gt;
+     &lt;span class="n"&gt;valueSerializer&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;serialize&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;topic&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;keyedMessages&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;_2&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
+&lt;span class="o"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;And again, once this serialization adapter is there, all we have to do is &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;  &lt;span class="k"&gt;val&lt;/span&gt; &lt;span class="n"&gt;kafkaProducerConfig&lt;/span&gt; &lt;span class="k"&gt;=&lt;/span&gt; &lt;span class="o"&gt;...&lt;/span&gt;
+
+  &lt;span class="k"&gt;val&lt;/span&gt; &lt;span class="n"&gt;someStream&lt;/span&gt; &lt;span class="k"&gt;=&lt;/span&gt; &lt;span class="n"&gt;kafkaStream&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;map&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;blabla&lt;/span&gt;&lt;span class="o"&gt;)...&lt;/span&gt;
+
+  &lt;span class="nc"&gt;FlinkKafkaProducer010&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;writeToKafkaWithTimestamps&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;
+    &lt;span class="n"&gt;someStream&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;javaStream&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt;
+    &lt;span class="s"&gt;&amp;quot;destinationTopic&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt;
+    &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="nc"&gt;AvroRegistrySerialization&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;destinationTopic&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;http://localhost:8081&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;),&lt;/span&gt;
+    &lt;span class="n"&gt;kafkaProducerConfig&lt;/span&gt;&lt;span class="o"&gt;)))&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;That's about it :) &lt;/p&gt;</content><category term="flink"></category><category term="avro"></category></entry><entry><title>Sending Avro records from Scala to Azure eventhub over AMQP</title><link href="https://svendx4f.github.io/sending-avro-records-from-scala-to-azure-eventhub-over-amqp.html" rel="alternate"></link><published>2017-06-26T00:00:00+02:00</published><updated>2017-06-26T00:00:00+02:00</updated><author><name>Svend Vanderveken</name></author><id>tag:svendx4f.github.io,2017-06-26:/sending-avro-records-from-scala-to-azure-eventhub-over-amqp.html</id><summary type="html">&lt;p&gt;This post illustrates how to emit Avro records to Azure EventHub from scala in such a way that they are directly parsed by the other services of the Azure platform (e.g. Azure Stream Analytics). &lt;/p&gt;
 &lt;p&gt;There exists a Java API for communicating with Azure EventHub which is documented as part …&lt;/p&gt;</summary><content type="html">&lt;p&gt;This post illustrates how to emit Avro records to Azure EventHub from scala in such a way that they are directly parsed by the other services of the Azure platform (e.g. Azure Stream Analytics). &lt;/p&gt;
 &lt;p&gt;There exists a Java API for communicating with Azure EventHub which is documented as part of the &lt;a href="https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-java-get-started-send"&gt;azure documentation&lt;/a&gt; and even made &lt;a href="https://github.com/Azure/azure-event-hubs-java"&gt;open source on github&lt;/a&gt; (things have changed at Microsoft...). That said, the most detailed documentation still seems to be based on the .NET API as manipulated with Visual Studio on Windows. Me being a Scala developer on a Mac, it took me a bit of experimentation to emit Avro messages to EventHub and have an Azure Stream Analytics job parse them correctly.&lt;/p&gt;
 &lt;p&gt;The steps below assume that you have access to the Azure portal and have created an EventHub namespace as well as an EventHub instance. If not, see the &lt;a href="https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-create"&gt;Azure documentation here&lt;/a&gt; for details.&lt;/p&gt;
 &lt;p&gt;I posted a fully working example &lt;a href="https://github.com/svendx4f/avro-eventhub-scala-example"&gt;here on github&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;This post has been written with the following frawmework versions in mind:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Avro 1.8.2&lt;/li&gt;
+&lt;li&gt;Azure EventHub SDK 0.14&lt;/li&gt;
+&lt;li&gt;Scala 2.11&lt;/li&gt;
+&lt;/ul&gt;
 &lt;h2&gt;Scala Avro record emitter&lt;/h2&gt;
 &lt;p&gt;In a nutshell, these are the few things to know when sending Avro to Azure EventHub: &lt;/p&gt;
 &lt;ul&gt;
