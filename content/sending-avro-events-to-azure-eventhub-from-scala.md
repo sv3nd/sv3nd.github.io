@@ -11,6 +11,12 @@ The steps below assume that you have access to the Azure portal and have created
 
 I posted a fully working example [here on github](https://github.com/svendx4f/avro-eventhub-scala-example).
 
+This post has been written with the following frawmework versions in mind:
+
+- Avro 1.8.2
+- Azure EventHub SDK 0.14
+- Scala 2.11
+
 
 ## Scala Avro record emitter
 
