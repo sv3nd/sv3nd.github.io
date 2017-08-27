@@ -24,7 +24,7 @@ LINKS = ()
 
 # Social widget (any font name from http://fontawesome.io/icons/ should work here)
 SOCIAL = (
-         ("github", 'https://github.com/svendx4f'),
+         ("github", 'https://github.com/sv3nd'),
      	 ("twitter", 'https://twitter.com/svend_x4f'),
      	 ("linkedin", 'https://be.linkedin.com/in/vanderveken'),
      	 ("stack-overflow", 'http://stackoverflow.com/users/3318335/svend'),
