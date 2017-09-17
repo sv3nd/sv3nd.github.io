@@ -1,9 +1,9 @@
-Title: Event time low-latency stream joins with Kafka Streams
+Title: Event time low-latency joins with Kafka Streams
 Date: 2017-09-17
 Tags: kafka, kafka-streams, stream-processing, scala
 Author: Svend Vanderveken
 
-This post attempts to illustrate the difficulty of performing a event-time join between two time series with a stream processing framework. It also describes one solution based on Kafka Streams 0.11.0.0.
+This post attempts to illustrate the difficulty of performing an event-time join between two time series with a stream processing framework. It also describes one solution based on Kafka Streams 0.11.0.0.
 
 An event-time join is an attempt to join two time series while taking into account the timestamps. More precisely, for each event from the first time series, it looks up the latest event from the other that occurred before it. This blog post is based on Kafka Stream although I found the original idea in this [Flink tutorial](http://training.data-artisans.com/exercises/eventTimeJoin.html), where the idea of event-time join is very well explained. 
 
@@ -30,7 +30,7 @@ SELECT CustomerOrderAsOfVisitDate.VisitId as visitID,
     LEFT JOIN (
       -- latest order date occuring before each visit
       SELECT CustomersVisit.VisitId, CustomersVisit.CustomerId, max(orderDate) as lastOrderDate
-          FROM Customers 
+          FROM CustomersVisit 
           JOIN Orders 
           ON (Orders.CustomerId == CustomersVisit.CustomerId AND
               Orders.OrderDate <= CustomersVisit.VisitDate) 
@@ -49,7 +49,7 @@ visitID  | customerId | lastOrderDateBeforeVisit | orderShipperId
 16 | Berglunds | 1996-12-16	| 3
 
 
-A typical crux of stream processing though is the fact that datasets are unbounded are considered theoretically infinite. This implies that at any point in time, we cannot be sure that we have received all necessary information to compute the final version of anything. In the example above, this means that `max(orderDate)` only returns the latest order date _observed so far_, though that's an aggregation that's ever changing. 
+A typical crux of stream processing though is the fact that datasets are unbounded and considered theoretically infinite. This implies that at any point in time, we cannot be sure that we have received all necessary information to compute the final version of anything. In the example above, this means that `max(orderDate)` only returns the latest order date _observed so far_, though that's an aggregation that's ever changing. 
 
 Also, because of delays that could happen during data ingestion, it is typically considered that events are not guaranteed to be delivered in order (see discussion in [Flink's documentation on Event time vs Processing time](https://ci.apache.org/projects/flink/flink-docs-release-1.3/dev/event_time.html) and [Spark's time handling documentation](https://spark.apache.org/docs/2.2.0/structured-streaming-programming-guide.html#handling-event-time-and-late-data))
 
@@ -57,9 +57,9 @@ This limitation applies also in the case of event-time join: any time we receive
 
 This question of "how long to wait" is one key difference between stream and batch processing. In a batch approach, some data collection process is assumed to have "waited long enough" beforehand so that at the moment of the batch execution, we can consider that "all data is available". Said otherwise, "waiting long enough" is not a concern of the batch implemenation whereas it is a first class citizen in stream processing. 
 
-In many cases though, a nightly batch that processes the last day's data are nothing less that a manual implementation of a 24h [tumbling window](https://ci.apache.org/projects/flink/flink-docs-release-1.3/dev/windows.html#tumbling-windows). Hiding the stream nature of a dataset behind nightly batches is sometimes hiding too much the complexity related to time by pretending that "all data is available". In many cases, we end up handling ourselves cases like late event arrivals or aggregation over more than one day (e.g. 30 sliding trends), which are much more natural if we use a framework that embrace the infinite time serie nature of the dataset. 
+In many cases though, a nightly batch that processes the last day's data are nothing less that a manual implementation of a 24h [tumbling window](https://ci.apache.org/projects/flink/flink-docs-release-1.3/dev/windows.html#tumbling-windows). Hiding the stream nature of a dataset behind nightly batches is sometimes hiding too much the complexity related to time by pretending that "all data is available". In many cases, we end up handling ourselves cases like late event arrivals or aggregation over more than one day (e.g. 30 sliding trends), which are much more natural if we use a framework that embrace the infinite time series nature of the dataset. 
 
-# Why not relying on Kafka event-time based processing
+# Why not relying on Kafka Streams event-time based processing
 
 Kafka Streams 0.11.0.0 does not offer out-of-the box event time join.
 
@@ -80,6 +80,10 @@ The gist of my solution is very simple:
 - upon receiving a _dimension event_, just record it in a time-bounded buffer (e.g. TTL = 1 day or so)
 - upon receiving a _transaction event_, perform a best effort join, i.e. join it with the dimension information available at that moment
 - schedule an action that review previously joined information and emits corrected joins when necessary
+
+Here is an illustration where the transaction stream is a stream of recommendations and the dimension stream is a stream of mood events (this use case is detailed in the code sample below): 
+
+<center><img src="images/04event-time-join-with-kafka-streams/event-time-join.png"  /> </center>
 
 Note that the result of this is what I call a _revision log_, i.e. a stream that contains one or several successive revisions of a given information (here, the result of the join). From the point of view of a consumer, only the latest version should be considered for each key. This matches exactly what Kafka Streams calls a [KTable](https://docs.confluent.io/current/streams/concepts.html#streams-concepts-ktable).
 
@@ -124,35 +128,33 @@ In order to perform _advanced_ analytics, we're going to join it with stream of 
 }
 ```
 
-Each of these events are delivered potentially out of order with arbitrary delays (see the next section on generating test data). We want to perform an event-time join, i.e. for each recommendation event, lookup the most recent known mood.
-
-<center><img src="images/04event-time-join-with-kafka-streams/event-time-join.png"  /> </center>
+Each of these events are delivered potentially out of order with arbitrary delays. We want to perform an event-time join, i.e. for each recommendation event, lookup the most recent known mood before the recommendation.
 
 The processing topology is very simple, we just parse the incoming `mood` or `recommendation` events and provide them to our `EventTimeJoiner` implementation: 
 
 ```scala
- val parsed = builder
- 	// read events from both Kafka topics
-    .stream(Serdes.String(), Serdes.String(), "etj-moods", "etj-events")
+val parsed = builder
+  // read events from both Kafka topics
+  .stream(Serdes.String(), Serdes.String(), "etj-moods", "etj-events")
     
-    // parse the Json into a stream of Either[Recommendation, Mood]
-    .mapValues[Option[Either[Recommendation, Mood]]](EventTimeJoinExample.parse)
-    .filter{ case (_, v: Option[Either[Recommendation, Mood]]) =>  v.isDefined }
-    .mapValues[Either[Recommendation, Mood]](_.get)
+  // parse the Json into a stream of Either[Recommendation, Mood]
+  .mapValues[Option[Either[Recommendation, Mood]]](EventTimeJoinExample.parse)
+  .filter{ case (_, v: Option[Either[Recommendation, Mood]]) =>  v.isDefined }
+  .mapValues[Either[Recommendation, Mood]](_.get)
     
-    // watch out: selectKey does not trigger repartitioning. My test data is already partionned => in this specific case it's ok
-    .selectKey[String]{ case (_, v) => EventTimeJoinExample.userId(v)}
+  // watch out: selectKey does not trigger repartitioning. My test data is already partionned => in this specific case it's ok
+  .selectKey[String]{ case (_, v) => EventTimeJoinExample.userId(v)}
     
-    // actual event-time join
-    .transform(EventTimeJoiner.supplier, "moods", "bestEffortJoins",  "consultants")
+  // actual event-time join
+  .transform(EventTimeJoiner.supplier, "moods", "bestEffortJoins",  "consultants")
 ```
 
 The `EventTimeJoiner` maintains 3 State stores: one containing the time series of moods of each consultant, another containing the joined events we have emitted recently and finally a 3rd one to recall all the consultant's names we have encountered recently: 
 
 ```scala
-  var moodStore: KeyValueStore[String, List[Mood]] = _
-  var bestEffortJoinsStore: WindowStore[String, MoodRec] = _
-  var consultantNamesStore : WindowStore[String, String] = _
+var moodStore: KeyValueStore[String, List[Mood]] = _
+var bestEffortJoinsStore: WindowStore[String, MoodRec] = _
+var consultantNamesStore : WindowStore[String, String] = _
 ```
 
 In the `transform()` method we have most of the high level logic mentioned above: 
@@ -161,52 +163,52 @@ In the `transform()` method we have most of the high level logic mentioned above
 - if we receive a recommendation event, we join it to the mood information we currently have, we record that in the `bestEffortjoinStore` and we emit it 
 
 ```scala
-  override def transform(key: String, event: Either[Recommendation, Mood]): KeyValue[String, MoodRec] =
-    event match {
-      case Left(rec) =>
-        val joined = join(rec.event_time, rec.consultant, rec.recommendation)
-        bestEffortJoinsStore.put(rec.consultant, joined, rec.event_time)
-        recordConsultantName(rec.consultant, rec.event_time)
-        new KeyValue(key, joined)
+override def transform(key: String, event: Either[Recommendation, Mood]): KeyValue[String, MoodRec] =
+  event match {
+    case Left(rec) =>
+      val joined = join(rec.event_time, rec.consultant, rec.recommendation)
+      bestEffortJoinsStore.put(rec.consultant, joined, rec.event_time)
+      recordConsultantName(rec.consultant, rec.event_time)
+      new KeyValue(key, joined)
 
-      case Right(mood) =>
-        val updatedMoodHistory = (mood :: moodHistory(mood.name)).sortBy( - _.event_time)
-        moodStore.put(mood.name, updatedMoodHistory)
-        recordConsultantName(mood.name, mood.event_time)
-        null
-    }
+    case Right(mood) =>
+      val updatedMoodHistory = (mood :: moodHistory(mood.name)).sortBy( - _.event_time)
+      moodStore.put(mood.name, updatedMoodHistory)
+      recordConsultantName(mood.name, mood.event_time)
+      null
+  }
       
-  def join(recommendationTime: Long, consultant: String, recommendation: String): MoodRec = {
-   val maybeMood = moodHistory(consultant)
-    .dropWhile(_.event_time >= recommendationTime)
-    .headOption
-    .map(_.mood)
+def join(recommendationTime: Long, consultant: String, recommendation: String): MoodRec = {
+ val maybeMood = moodHistory(consultant)
+  .dropWhile(_.event_time >= recommendationTime)
+  .headOption
+  .map(_.mood)
 
-    MoodRec(recommendationTime, consultant, maybeMood, recommendation)
-  }    
+  MoodRec(recommendationTime, consultant, maybeMood, recommendation)
+}    
 ```
 
 This is only half of the story of course, since we also need to schedule a periodic review of that join result. This is very easy do to in Kafka Streams by simply requesting our `punctuate()` method to be invoked every (say) 1000ms _in event time_ (whose definition depends on how we configured our [timestamp-extractor](https://docs.confluent.io/current/streams/developer-guide.html#streams-developer-guide-timestamp-extractor), and here again keep in mind that [KIP-138](https://cwiki.apache.org/confluence/display/KAFKA/KIP-138%3A+Change+punctuate+semantics) is on its way to revisit that): 
 
 ```scala 
-  override def init(context: ProcessorContext): Unit = {    
-    context.schedule(1000)
-  }
+override def init(context: ProcessorContext): Unit = {    
+  context.schedule(1000)
+}
 ```
 
 
 And once we're there we're essentially done. All that's left to do is to let `punctuate()` revisit the join result of all recently witnessed consultants and, if any difference is found, re-emit the updated join result. Note in passing the awesome `fetch()` method of the window store which let us easily query a time series by range. The `joinAgain()` method is not shown here, though essentially it just revisit the join result
 
 ```scala 
-  override def punctuate(latestEventTime: Long): KeyValue[String, MoodRec] = {
-    allRecentConsultants(until = latestEventTime).foreach {
-      consultantName => joinAgain(consultantName, maxEventTimestamp = latestEventTime - reviewLagDelta)
-    }
-    null
+override def punctuate(latestEventTime: Long): KeyValue[String, MoodRec] = {
+  allRecentConsultants(until = latestEventTime).foreach {
+    consultantName => joinAgain(consultantName, maxEventTimestamp = latestEventTime - reviewLagDelta)
   }
+  null
+}
   
-  def allRecentConsultants(until: Long): Iterator[String] =
-    consultantNamesStore.fetch("all-recent-names", BEGINNING_OF_TIMES, until).asScala.map(_.value)
+def allRecentConsultants(until: Long): Iterator[String] =
+  consultantNamesStore.fetch("all-recent-names", BEGINNING_OF_TIMES, until).asScala.map(_.value)
 ```
 
 Note that my code at that point gets a bit dirty and in particular, lacks some necessary clean up of some key-value store. Yeah, I'm that lazy...
