@@ -87,7 +87,7 @@
     <span class="k">LEFT</span> <span class="k">JOIN</span> <span class="p">(</span>
       <span class="c1">-- latest order date occuring before each visit</span>
       <span class="k">SELECT</span> <span class="n">CustomersVisit</span><span class="p">.</span><span class="n">VisitId</span><span class="p">,</span> <span class="n">CustomersVisit</span><span class="p">.</span><span class="n">CustomerId</span><span class="p">,</span> <span class="k">max</span><span class="p">(</span><span class="n">orderDate</span><span class="p">)</span> <span class="k">as</span> <span class="n">lastOrderDate</span>
-          <span class="k">FROM</span> <span class="n">Customers</span> 
+          <span class="k">FROM</span> <span class="n">CustomersVisit</span> 
           <span class="k">JOIN</span> <span class="n">Orders</span> 
           <span class="k">ON</span> <span class="p">(</span><span class="n">Orders</span><span class="p">.</span><span class="n">CustomerId</span> <span class="o">==</span> <span class="n">CustomersVisit</span><span class="p">.</span><span class="n">CustomerId</span> <span class="k">AND</span>
               <span class="n">Orders</span><span class="p">.</span><span class="n">OrderDate</span> <span class="o">&lt;=</span> <span class="n">CustomersVisit</span><span class="p">.</span><span class="n">VisitDate</span><span class="p">)</span> 
