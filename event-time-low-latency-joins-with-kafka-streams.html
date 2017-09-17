@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<link href="http://gmpg.org/xfn/11" rel="profile">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+		<!-- Enable responsiveness on mobile devices-->
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+		<title>Svend Vanderveken</title>
+
+		<!-- CSS -->
+		<link href="//fonts.googleapis.com/" rel="dns-prefetch">
+		<link href="//fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic|Abril+Fatface|PT+Sans:400,400italic,700&amp;subset=latin,latin-ext" rel="stylesheet">
+
+		<link rel="stylesheet" href="https://sv3nd.github.io/theme/css/poole.css" />
+		<link rel="stylesheet" href="https://sv3nd.github.io/theme/css/hyde.css" />
+		<link rel="stylesheet" href="https://sv3nd.github.io/theme/css/syntax.css" />
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+
+		<!-- RSS -->
+		<link rel="alternate" type="application/rss+xml" title="RSS" href="/atom.xml">
+	<script type="text/javascript">
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+ 			(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+ 			m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+ 			})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+			ga('create', 'UA-101598127-1', 'auto');
+			ga('send', 'pageview');
+	</script>
+	</head>
+
+	<body class="theme-base-0d">
+<div class="sidebar">
+	<div class="container sidebar-sticky">
+		<div class="sidebar-about">
+
+			<h1>
+				<a href="/">
+					<img class="profile-picture" src="https://sv3nd.github.io/images/blog/svend.jpg">
+					Svend Vanderveken
+				</a>
+			</h1>
+			<p class="lead"></p>
+			<p class="lead">I am a freelance Data Engineer, I focus on scalable data processing pipelines based on Spark, Kafka, Cassandra... I love to code, preferably in Scala, Python and SQL. </p>
+			<p></p>
+		</div>
+		<nav class="sidebar-nav">
+					<a class="sidebar-nav-item" href="https://github.com/sv3nd">
+						<i class="fa fa-github"></i>
+					</a>
+					<a class="sidebar-nav-item" href="https://twitter.com/svend_x4f">
+						<i class="fa fa-twitter"></i>
+					</a>
+					<a class="sidebar-nav-item" href="https://be.linkedin.com/in/vanderveken">
+						<i class="fa fa-linkedin"></i>
+					</a>
+					<a class="sidebar-nav-item" href="http://stackoverflow.com/users/3318335/svend">
+						<i class="fa fa-stack-overflow"></i>
+					</a>
+			<a class="sidebar-nav-item" href="">
+				<i class="fa fa-feed"></i>
+			</a>
+		</nav>
+	</div>
+</div>		<div class="content container">
+<div class="post">
+	<h1 class="post-title">Event time low-latency joins with Kafka Streams</h1>
+	<span class="post-date">Sun 17 September 2017</span>
+	<p>This post attempts to illustrate the difficulty of performing a event-time join between two time series with a stream processing framework. It also describes one solution based on Kafka Streams 0.11.0.0.</p>
+<p>An event-time join is an attempt to join two time series while taking into account the timestamps. More precisely, for each event from the first time series, it looks up the latest event from the other that occurred before it. This blog post is based on Kafka Stream although I found the original idea in this <a href="http://training.data-artisans.com/exercises/eventTimeJoin.html">Flink tutorial</a>, where the idea of event-time join is very well explained. </p>
+<p>Event-time join are often required in practise. For example, given a stream of transactions and another one of customer profile updates, we might want to associate each transaction to the corresponding customer profile as it was known at the moment of the transaction. Or given a stream of traffic information and another one of weather updates, we might want to associate each traffic event with the latest weather that was known at that location. </p>
+<p>Note that an event-time join is not symmetric: performing an event-time join from stream 1 to stream 2 does not yield the same result as performing it from stream 2 to stream 1.</p>
+<h1>Difficulty and opportunity related to streaming approach</h1>
+<p>If we were in a batch context, implementing an event-time join would be pretty straightforward. By batch context I mean one where "all the data is available", so that the execution of an aggregation like <code>max(orderDate)</code> is guaranteed to provide the last order date of the full dataset. </p>
+<p>For example, assume we have a dataset of customer visit events and another one of orders. Both are timestamped and both are thus representing time series. Suppose we want to look up, for each customer visit, the latest order performed by that customer <em>before</em> the visit. In Batch mode, we can simply look up the latest known order before the visit (<code>Orders.OrderDate &lt;= CustomersVisit.VisitDate</code> in the example below) and join that to the visit information. One possible illustration might be:</p>
+<div class="highlight"><pre><span></span><span class="cm">/**</span>
+<span class="cm">  One batch approach to linking each customer visit to their latest order that occured before that.</span>
+<span class="cm">  (probably not optimal, though hopefully clear enough to illustrates my purpose)</span>
+<span class="cm"> */</span>
+<span class="k">SELECT</span> <span class="n">CustomerOrderAsOfVisitDate</span><span class="p">.</span><span class="n">VisitId</span> <span class="k">as</span> <span class="n">visitID</span><span class="p">,</span> 
+       <span class="n">CustomerOrderAsOfVisitDate</span><span class="p">.</span><span class="n">CustomerId</span> <span class="k">as</span> <span class="n">customerId</span><span class="p">,</span> 
+       <span class="n">Orders</span><span class="p">.</span><span class="n">OrderDate</span> <span class="k">as</span> <span class="n">lastOrderDateBeforeVisit</span><span class="p">,</span> 
+       <span class="n">Orders</span><span class="p">.</span><span class="n">ShipperId</span> <span class="n">orderShipperId</span>
+    <span class="k">FROM</span> <span class="n">Orders</span>
+    <span class="k">LEFT</span> <span class="k">JOIN</span> <span class="p">(</span>
+      <span class="c1">-- latest order date occuring before each visit</span>
+      <span class="k">SELECT</span> <span class="n">CustomersVisit</span><span class="p">.</span><span class="n">VisitId</span><span class="p">,</span> <span class="n">CustomersVisit</span><span class="p">.</span><span class="n">CustomerId</span><span class="p">,</span> <span class="k">max</span><span class="p">(</span><span class="n">orderDate</span><span class="p">)</span> <span class="k">as</span> <span class="n">lastOrderDate</span>
+          <span class="k">FROM</span> <span class="n">Customers</span> 
+          <span class="k">JOIN</span> <span class="n">Orders</span> 
+          <span class="k">ON</span> <span class="p">(</span><span class="n">Orders</span><span class="p">.</span><span class="n">CustomerId</span> <span class="o">==</span> <span class="n">CustomersVisit</span><span class="p">.</span><span class="n">CustomerId</span> <span class="k">AND</span>
+              <span class="n">Orders</span><span class="p">.</span><span class="n">OrderDate</span> <span class="o">&lt;=</span> <span class="n">CustomersVisit</span><span class="p">.</span><span class="n">VisitDate</span><span class="p">)</span> 
+          <span class="k">GROUP</span> <span class="k">BY</span> <span class="n">CustomersVisit</span><span class="p">.</span><span class="n">VisitId</span><span class="p">,</span> <span class="n">CustomersVisit</span><span class="p">.</span><span class="n">CustomerId</span>
+    <span class="p">)</span> <span class="k">AS</span> <span class="n">CustomerOrderAsOfVisitDate</span>
+    <span class="k">on</span> <span class="p">(</span><span class="n">CustomerOrderAsOfVisitDate</span><span class="p">.</span><span class="n">CustomerId</span> <span class="o">==</span> <span class="n">Orders</span><span class="p">.</span><span class="n">CustomerId</span> <span class="k">AND</span>
+        <span class="n">CustomerOrderAsOfVisitDate</span><span class="p">.</span><span class="n">lastOrderDate</span> <span class="o">==</span> <span class="n">Orders</span><span class="p">.</span><span class="n">OrderDate</span><span class="p">)</span>
+</pre></div>
+
+
+<table>
+<thead>
+<tr>
+<th>visitID</th>
+<th>customerId</th>
+<th>lastOrderDateBeforeVisit</th>
+<th>orderShipperId</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>12</td>
+<td>Ana Trujillo</td>
+<td>1996-09-18</td>
+<td>3</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Antonio Moreno</td>
+<td>1996-11-27</td>
+<td>2</td>
+</tr>
+<tr>
+<td>15</td>
+<td>Around</td>
+<td>1996-12-16</td>
+<td>3</td>
+</tr>
+<tr>
+<td>16</td>
+<td>Berglunds</td>
+<td>1996-12-16</td>
+<td>3</td>
+</tr>
+</tbody>
+</table>
+<p>A typical crux of stream processing though is the fact that datasets are unbounded and considered theoretically infinite. This implies that at any point in time, we cannot be sure that we have received all necessary information to compute the final version of anything. In the example above, this means that <code>max(orderDate)</code> only returns the latest order date <em>observed so far</em>, though that's an aggregation that's ever changing. </p>
+<p>Also, because of delays that could happen during data ingestion, it is typically considered that events are not guaranteed to be delivered in order (see discussion in <a href="https://ci.apache.org/projects/flink/flink-docs-release-1.3/dev/event_time.html">Flink's documentation on Event time vs Processing time</a> and <a href="https://spark.apache.org/docs/2.2.0/structured-streaming-programming-guide.html#handling-event-time-and-late-data">Spark's time handling documentation</a>)</p>
+<p>This limitation applies also in the case of event-time join: any time we receive a transaction or a car traffic information, we cannot in general be sure that the information we current have concerning user profiles or weather time series is the latest that we will ever be available. We could decide to wait, though how long?</p>
+<p>This question of "how long to wait" is one key difference between stream and batch processing. In a batch approach, some data collection process is assumed to have "waited long enough" beforehand so that at the moment of the batch execution, we can consider that "all data is available". Said otherwise, "waiting long enough" is not a concern of the batch implemenation whereas it is a first class citizen in stream processing. </p>
+<p>In many cases though, a nightly batch that processes the last day's data are nothing less that a manual implementation of a 24h <a href="https://ci.apache.org/projects/flink/flink-docs-release-1.3/dev/windows.html#tumbling-windows">tumbling window</a>. Hiding the stream nature of a dataset behind nightly batches is sometimes hiding too much the complexity related to time by pretending that "all data is available". In many cases, we end up handling ourselves cases like late event arrivals or aggregation over more than one day (e.g. 30 sliding trends), which are much more natural if we use a framework that embrace the infinite time series nature of the dataset. </p>
+<h1>Why not relying on Kafka Streams event-time based processing</h1>
+<p>Kafka Streams 0.11.0.0 does not offer out-of-the box event time join.</p>
+<p>It does provide however a couple of handy primitives for designing stream processing based on event time, as explained in the <a href="https://docs.confluent.io/current/streams/concepts.html#time">Kafka Streams concepts documentation</a>. As far as I understand however, these features are primarily useful for <a href="https://docs.confluent.io/current/streams/developer-guide.html#streams-developer-guide-dsl-windowing">time-based window aggregations</a> and <a href="http://docs.confluent.io/current/streams/architecture.html?highlight=flow%20control#flow-control-with-timestamps">best effort flow control</a>.  </p>
+<p>Kafka Streams DSL also exposes <a href="https://docs.confluent.io/current/streams/developer-guide.html#kstream-ktable-join">KStreams-to-KTable join</a> which essentially corresponds to looking up up-to-date reference data in real time. Confluent has published two excellent blogs about it (<a href="https://www.confluent.io/blog/watermarks-tables-event-time-dataflow-model/">here</a> and <a href="https://www.confluent.io/blog/distributed-real-time-joins-and-aggregations-on-user-activity-events-using-kafka-streams/">here</a>). Combined with Kafka Streams's built-in best-effort flow control, this is already quite powerful and probably exactly what we need in many cases. As a point of comparaison, at the time of writing this, this feature is not (yet?) available as part of Spark Structured Streaming (2.2.0) out of the box.</p>
+<p>Ktable-to-KStream however corresponds to a lookup done at processing time (as mentioned in <a href="https://kafka.apache.org/0110/javadoc/org/apache/kafka/streams/kstream/KStream.html#join(org.apache.kafka.streams.kstream.KTable, org.apache.kafka.streams.kstream.ValueJoiner)">KStream::join javadoc</a>). To fully support event-time-join of out of order streams, we need to manually keep some buffers of both streams, which is explained below.</p>
+<h1>High level approach</h1>
+<p>As mentioned in the introduction, this post is inspired from the <a href="http://training.data-artisans.com/exercises/eventTimeJoin.html">Flink event-time join tutorial</a>, and my  solution is almost a copy-cat of <a href="https://github.com/dataArtisans/flink-training-exercises/blob/master/src/main/scala/com/dataartisans/flinktraining/exercises/datastream_scala/lowlatencyjoin/EventTimeJoinHelper.scala">their suggested solution</a>.</p>
+<p>The gist of my solution is very simple: </p>
+<ul>
+<li>keep in mind that an event-time join is an asymmetric operation. Let's name the first stream the <em>transaction stream</em> and the one we are join it to the <em>dimension stream</em></li>
+<li>upon receiving a <em>dimension event</em>, just record it in a time-bounded buffer (e.g. TTL = 1 day or so)</li>
+<li>upon receiving a <em>transaction event</em>, perform a best effort join, i.e. join it with the dimension information available at that moment</li>
+<li>schedule an action that review previously joined information and emits corrected joins when necessary</li>
+</ul>
+<p>Here is an illustration where the transaction stream is a stream of recommendations and the dimension stream is a stream of mood events (this use case is detailed in the code sample below): </p>
+<p><center><img src="images/04event-time-join-with-kafka-streams/event-time-join.png"  /> </center></p>
+<p>Note that the result of this is what I call a <em>revision log</em>, i.e. a stream that contains one or several successive revisions of a given information (here, the result of the join). From the point of view of a consumer, only the latest version should be considered for each key. This matches exactly what Kafka Streams calls a <a href="https://docs.confluent.io/current/streams/concepts.html#streams-concepts-ktable">KTable</a>.</p>
+<h1>The code!</h1>
+<h2>Major Kafka Streams components I am using</h2>
+<p>Note that this is all written with Kafka 0.11.0.0 in mind whose API is likely to change in the future. In particular, <a href="https://cwiki.apache.org/confluence/display/KAFKA/KIP-138%3A+Change+punctuate+semantics">KIP-138</a> which is <a href="https://cwiki.apache.org/confluence/pages/viewpage.action?pageId=71764913">planned to be released as part of Kafka 1.0</a> will change slightly the semantics of <code>punctuate</code>, which I rely upon below.</p>
+<ul>
+<li>
+<p>The <a href="https://docs.confluent.io/current/streams/developer-guide.html#processor-api">processor API</a> that allows a low level access to the events. </p>
+</li>
+<li>
+<p>The ability to create a stateful stream by creating a <a href="https://docs.confluent.io/current/streams/developer-guide.html#state-stores">local though fault-tolerant state stores</a>. These state stores are local, persistent (backed by a Kafka topic) and transparently re-created on any node in case of restart. </p>
+</li>
+<li>
+<p>In particular, <a href="https://docs.confluent.io/current/streams/developer-guide.html#fault-tolerant-state-stores">window store</a> are an awesome feature that greatly simplifies stream processing since they automatically clean up old data from the local buffer. Also, They allow us to store value associated to a key and a timestamp, like this: <code>kv.put(key, value, timestamp)</code> and then retrieve all values for this key within a given time range, like this:  <code>kv.fetch(key, fromTime, toTime)</code>. </p>
+</li>
+<li>
+<p>The API allow us to <a href="https://docs.confluent.io/current/streams/javadocs/org/apache/kafka/streams/kstream/KStreamBuilder.html#stream-org.apache.kafka.common.serialization.Serde-org.apache.kafka.common.serialization.Serde-java.lang.String...-">listen to several topics at once</a> and even to listen to a <a href="https://docs.confluent.io/current/streams/javadocs/org/apache/kafka/streams/kstream/KStreamBuilder.html#stream-java.util.regex.Pattern-">topic name regexp</a> ! This simple feature removes the need in this case of specific API for multiple inputs like <a href="https://ci.apache.org/projects/flink/flink-docs-release-1.3/api/java/org/apache/flink/streaming/api/functions/co/CoProcessFunction.html">Flink's CoProcessFunction</a>. </p>
+</li>
+</ul>
+<h2>Code walkthrough</h2>
+<p>With all this explained and explored, the actual implementation is pretty straightforward. I pushed a proof of concept in Scala to my <a href="https://github.com/sv3nd/event-time-join-with-kafka-streams">event-time-join-with-kafka-streams github repo</a>.</p>
+<p>In this example, we are going to process an event stream of consultant's recommendation (I'm a consultant myself, so I know best). A recommendation event looks like that:</p>
+<div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;ingestion_time&quot;</span><span class="p">:</span> <span class="mi">697</span><span class="p">,</span>
+  <span class="nt">&quot;consultant&quot;</span><span class="p">:</span> <span class="s2">&quot;Sheila&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;event_time&quot;</span><span class="p">:</span> <span class="mi">520</span><span class="p">,</span>
+  <span class="nt">&quot;recommendation&quot;</span><span class="p">:</span> <span class="s2">&quot;seize proactive interfaces&quot;</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>In order to perform <em>advanced</em> analytics, we're going to join it with stream of known mood of said consultants. Here's an example of consultant's mood event: </p>
+<div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;ingestion_time&quot;</span><span class="p">:</span> <span class="mi">696</span><span class="p">,</span>
+  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Tammy&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;event_time&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+  <span class="nt">&quot;mood&quot;</span><span class="p">:</span> <span class="s2">&quot;neutral&quot;</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>Each of these events are delivered potentially out of order with arbitrary delays (see the next section on generating test data). We want to perform an event-time join, i.e. for each recommendation event, lookup the most recent known mood.</p>
+<p>The processing topology is very simple, we just parse the incoming <code>mood</code> or <code>recommendation</code> events and provide them to our <code>EventTimeJoiner</code> implementation: </p>
+<div class="highlight"><pre><span></span> <span class="k">val</span> <span class="n">parsed</span> <span class="k">=</span> <span class="n">builder</span>
+    <span class="c1">// read events from both Kafka topics</span>
+    <span class="o">.</span><span class="n">stream</span><span class="o">(</span><span class="nc">Serdes</span><span class="o">.</span><span class="nc">String</span><span class="o">(),</span> <span class="nc">Serdes</span><span class="o">.</span><span class="nc">String</span><span class="o">(),</span> <span class="s">&quot;etj-moods&quot;</span><span class="o">,</span> <span class="s">&quot;etj-events&quot;</span><span class="o">)</span>
+
+    <span class="c1">// parse the Json into a stream of Either[Recommendation, Mood]</span>
+    <span class="o">.</span><span class="n">mapValues</span><span class="o">[</span><span class="kt">Option</span><span class="o">[</span><span class="kt">Either</span><span class="o">[</span><span class="kt">Recommendation</span>, <span class="kt">Mood</span><span class="o">]]](</span><span class="nc">EventTimeJoinExample</span><span class="o">.</span><span class="n">parse</span><span class="o">)</span>
+    <span class="o">.</span><span class="n">filter</span><span class="o">{</span> <span class="k">case</span> <span class="o">(</span><span class="k">_</span><span class="o">,</span> <span class="n">v</span><span class="k">:</span> <span class="kt">Option</span><span class="o">[</span><span class="kt">Either</span><span class="o">[</span><span class="kt">Recommendation</span>, <span class="kt">Mood</span><span class="o">]])</span> <span class="k">=&gt;</span>  <span class="n">v</span><span class="o">.</span><span class="n">isDefined</span> <span class="o">}</span>
+    <span class="o">.</span><span class="n">mapValues</span><span class="o">[</span><span class="kt">Either</span><span class="o">[</span><span class="kt">Recommendation</span>, <span class="kt">Mood</span><span class="o">]](</span><span class="k">_</span><span class="o">.</span><span class="n">get</span><span class="o">)</span>
+
+    <span class="c1">// watch out: selectKey does not trigger repartitioning. My test data is already partionned =&gt; in this specific case it&#39;s ok</span>
+    <span class="o">.</span><span class="n">selectKey</span><span class="o">[</span><span class="kt">String</span><span class="o">]{</span> <span class="k">case</span> <span class="o">(</span><span class="k">_</span><span class="o">,</span> <span class="n">v</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="nc">EventTimeJoinExample</span><span class="o">.</span><span class="n">userId</span><span class="o">(</span><span class="n">v</span><span class="o">)}</span>
+
+    <span class="c1">// actual event-time join</span>
+    <span class="o">.</span><span class="n">transform</span><span class="o">(</span><span class="nc">EventTimeJoiner</span><span class="o">.</span><span class="n">supplier</span><span class="o">,</span> <span class="s">&quot;moods&quot;</span><span class="o">,</span> <span class="s">&quot;bestEffortJoins&quot;</span><span class="o">,</span>  <span class="s">&quot;consultants&quot;</span><span class="o">)</span>
+</pre></div>
+
+
+<p>The <code>EventTimeJoiner</code> maintains 3 State stores: one containing the time series of moods of each consultant, another containing the joined events we have emitted recently and finally a 3rd one to recall all the consultant's names we have encountered recently: </p>
+<div class="highlight"><pre><span></span>  <span class="k">var</span> <span class="n">moodStore</span><span class="k">:</span> <span class="kt">KeyValueStore</span><span class="o">[</span><span class="kt">String</span>, <span class="kt">List</span><span class="o">[</span><span class="kt">Mood</span><span class="o">]]</span> <span class="k">=</span> <span class="k">_</span>
+  <span class="k">var</span> <span class="n">bestEffortJoinsStore</span><span class="k">:</span> <span class="kt">WindowStore</span><span class="o">[</span><span class="kt">String</span>, <span class="kt">MoodRec</span><span class="o">]</span> <span class="k">=</span> <span class="k">_</span>
+  <span class="k">var</span> <span class="n">consultantNamesStore</span> <span class="k">:</span> <span class="kt">WindowStore</span><span class="o">[</span><span class="kt">String</span>, <span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="k">_</span>
+</pre></div>
+
+
+<p>In the <code>transform()</code> method we have most of the high level logic mentioned above: </p>
+<ul>
+<li>if we receive a mood event, we just record that mood within the time series of the corresponding consultant in the <code>moodStore</code></li>
+<li>if we receive a recommendation event, we join it to the mood information we currently have, we record that in the <code>bestEffortjoinStore</code> and we emit it </li>
+</ul>
+<div class="highlight"><pre><span></span>  <span class="k">override</span> <span class="k">def</span> <span class="n">transform</span><span class="o">(</span><span class="n">key</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">event</span><span class="k">:</span> <span class="kt">Either</span><span class="o">[</span><span class="kt">Recommendation</span>, <span class="kt">Mood</span><span class="o">])</span><span class="k">:</span> <span class="kt">KeyValue</span><span class="o">[</span><span class="kt">String</span>, <span class="kt">MoodRec</span><span class="o">]</span> <span class="k">=</span>
+    <span class="n">event</span> <span class="k">match</span> <span class="o">{</span>
+      <span class="k">case</span> <span class="nc">Left</span><span class="o">(</span><span class="n">rec</span><span class="o">)</span> <span class="k">=&gt;</span>
+        <span class="k">val</span> <span class="n">joined</span> <span class="k">=</span> <span class="n">join</span><span class="o">(</span><span class="n">rec</span><span class="o">.</span><span class="n">event_time</span><span class="o">,</span> <span class="n">rec</span><span class="o">.</span><span class="n">consultant</span><span class="o">,</span> <span class="n">rec</span><span class="o">.</span><span class="n">recommendation</span><span class="o">)</span>
+        <span class="n">bestEffortJoinsStore</span><span class="o">.</span><span class="n">put</span><span class="o">(</span><span class="n">rec</span><span class="o">.</span><span class="n">consultant</span><span class="o">,</span> <span class="n">joined</span><span class="o">,</span> <span class="n">rec</span><span class="o">.</span><span class="n">event_time</span><span class="o">)</span>
+        <span class="n">recordConsultantName</span><span class="o">(</span><span class="n">rec</span><span class="o">.</span><span class="n">consultant</span><span class="o">,</span> <span class="n">rec</span><span class="o">.</span><span class="n">event_time</span><span class="o">)</span>
+        <span class="k">new</span> <span class="nc">KeyValue</span><span class="o">(</span><span class="n">key</span><span class="o">,</span> <span class="n">joined</span><span class="o">)</span>
+
+      <span class="k">case</span> <span class="nc">Right</span><span class="o">(</span><span class="n">mood</span><span class="o">)</span> <span class="k">=&gt;</span>
+        <span class="k">val</span> <span class="n">updatedMoodHistory</span> <span class="k">=</span> <span class="o">(</span><span class="n">mood</span> <span class="o">::</span> <span class="n">moodHistory</span><span class="o">(</span><span class="n">mood</span><span class="o">.</span><span class="n">name</span><span class="o">)).</span><span class="n">sortBy</span><span class="o">(</span> <span class="o">-</span> <span class="k">_</span><span class="o">.</span><span class="n">event_time</span><span class="o">)</span>
+        <span class="n">moodStore</span><span class="o">.</span><span class="n">put</span><span class="o">(</span><span class="n">mood</span><span class="o">.</span><span class="n">name</span><span class="o">,</span> <span class="n">updatedMoodHistory</span><span class="o">)</span>
+        <span class="n">recordConsultantName</span><span class="o">(</span><span class="n">mood</span><span class="o">.</span><span class="n">name</span><span class="o">,</span> <span class="n">mood</span><span class="o">.</span><span class="n">event_time</span><span class="o">)</span>
+        <span class="kc">null</span>
+    <span class="o">}</span>
+
+  <span class="k">def</span> <span class="n">join</span><span class="o">(</span><span class="n">recommendationTime</span><span class="k">:</span> <span class="kt">Long</span><span class="o">,</span> <span class="n">consultant</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">recommendation</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span><span class="k">:</span> <span class="kt">MoodRec</span> <span class="o">=</span> <span class="o">{</span>
+   <span class="k">val</span> <span class="n">maybeMood</span> <span class="k">=</span> <span class="n">moodHistory</span><span class="o">(</span><span class="n">consultant</span><span class="o">)</span>
+    <span class="o">.</span><span class="n">dropWhile</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">event_time</span> <span class="o">&gt;=</span> <span class="n">recommendationTime</span><span class="o">)</span>
+    <span class="o">.</span><span class="n">headOption</span>
+    <span class="o">.</span><span class="n">map</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">mood</span><span class="o">)</span>
+
+    <span class="nc">MoodRec</span><span class="o">(</span><span class="n">recommendationTime</span><span class="o">,</span> <span class="n">consultant</span><span class="o">,</span> <span class="n">maybeMood</span><span class="o">,</span> <span class="n">recommendation</span><span class="o">)</span>
+  <span class="o">}</span>    
+</pre></div>
+
+
+<p>This is only half of the story of course, since we also need to schedule a periodic review of that join result. This is very easy do to in Kafka Streams by simply requesting our <code>punctuate()</code> method to be invoked every (say) 1000ms <em>in event time</em> (whose definition depends on how we configured our <a href="https://docs.confluent.io/current/streams/developer-guide.html#streams-developer-guide-timestamp-extractor">timestamp-extractor</a>, and here again keep in mind that <a href="https://cwiki.apache.org/confluence/display/KAFKA/KIP-138%3A+Change+punctuate+semantics">KIP-138</a> is on its way to revisit that): </p>
+<div class="highlight"><pre><span></span>  <span class="k">override</span> <span class="k">def</span> <span class="n">init</span><span class="o">(</span><span class="n">context</span><span class="k">:</span> <span class="kt">ProcessorContext</span><span class="o">)</span><span class="k">:</span> <span class="kt">Unit</span> <span class="o">=</span> <span class="o">{</span>    
+    <span class="n">context</span><span class="o">.</span><span class="n">schedule</span><span class="o">(</span><span class="mi">1000</span><span class="o">)</span>
+  <span class="o">}</span>
+</pre></div>
+
+
+<p>And once we're there we're essentially done. All that's left to do is to let <code>punctuate()</code> revisit the join result of all recently witnessed consultants and, if any difference is found, re-emit the updated join result. Note in passing the awesome <code>fetch()</code> method of the window store which let us easily query a time series by range. The <code>joinAgain()</code> method is not shown here, though essentially it just revisit the join result</p>
+<div class="highlight"><pre><span></span>  <span class="k">override</span> <span class="k">def</span> <span class="n">punctuate</span><span class="o">(</span><span class="n">latestEventTime</span><span class="k">:</span> <span class="kt">Long</span><span class="o">)</span><span class="k">:</span> <span class="kt">KeyValue</span><span class="o">[</span><span class="kt">String</span>, <span class="kt">MoodRec</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+    <span class="n">allRecentConsultants</span><span class="o">(</span><span class="n">until</span> <span class="k">=</span> <span class="n">latestEventTime</span><span class="o">).</span><span class="n">foreach</span> <span class="o">{</span>
+      <span class="n">consultantName</span> <span class="k">=&gt;</span> <span class="n">joinAgain</span><span class="o">(</span><span class="n">consultantName</span><span class="o">,</span> <span class="n">maxEventTimestamp</span> <span class="k">=</span> <span class="n">latestEventTime</span> <span class="o">-</span> <span class="n">reviewLagDelta</span><span class="o">)</span>
+    <span class="o">}</span>
+    <span class="kc">null</span>
+  <span class="o">}</span>
+
+  <span class="k">def</span> <span class="n">allRecentConsultants</span><span class="o">(</span><span class="n">until</span><span class="k">:</span> <span class="kt">Long</span><span class="o">)</span><span class="k">:</span> <span class="kt">Iterator</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span> <span class="k">=</span>
+    <span class="n">consultantNamesStore</span><span class="o">.</span><span class="n">fetch</span><span class="o">(</span><span class="s">&quot;all-recent-names&quot;</span><span class="o">,</span> <span class="nc">BEGINNING_OF_TIMES</span><span class="o">,</span> <span class="n">until</span><span class="o">).</span><span class="n">asScala</span><span class="o">.</span><span class="n">map</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">value</span><span class="o">)</span>
+</pre></div>
+
+
+<p>Note that my code at that point gets a bit dirty and in particular, lacks some necessary clean up of some key-value store. Yeah, I'm that lazy...</p>
+<h1>Conclusion</h1>
+<p>I really love the Kafka Streams abstractions, the duality between logs and tables is beautifully present a bit everywhere, which offers a refreshing way of designing both data processing solution but also plain reactive micro-services. Also, Kafka Streams is just a very thin layer on top of the core functionalities offered by Kafka clusters and Kafka consumers/producers. A KTable is essentially a compacted topics on steroids, a join boils down to pushing key-values to a topic and letting Kafka's paritioning by key co-locating the data, local distributed state stores are event-sourced to Kafka topics again which makes them transparently replicated....</p>
+<p>This of course means that Kafka streams very tightly coupled to the underlying Kafka cluster. This is a very different positioning that Flink or Spark Structured Streaming which are planned for any streaming input and output.</p>
+<p>I like less the current java-only API which is very OO-based, encourages mutating objects and makes explicit use of null values. For example instances of <code>Transformer</code> (and many other API components) must be classes created with null instance members that are later on initialised the <code>init()</code>. My preference would have been for relying more on immutable constructs. Likewise differences between scala and java generics semantic imply that <a href="https://docs.confluent.io/current/streams/faq.html#scala-compile-error-no-type-parameter-java-defined-trait-is-invariant-in-type-t">scala code becomes less elegant than what it could be</a>. </p>
+<p>Kafka Streams is a young project though, so one can hope that a functional-oriented and scala based API might be offered at some point in the future (pretty please?)</p>
+	<div id="disqus_thread"></div>
+		<script type="text/javascript">
+			var disqus_shortname = 'svend-blog';
+			(function() {
+	 			var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+	 			dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+	 			(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+	 		})();
+		</script>
+	<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+</div>
+		</div>
+	</body>
+</html>
