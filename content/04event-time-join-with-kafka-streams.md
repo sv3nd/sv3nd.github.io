@@ -7,7 +7,7 @@ This post attempts to illustrate the difficulty of performing an event-time join
 
 An event-time join is an attempt to join two time series while taking into account the timestamps. More precisely, for each event from the first time series, it looks up the latest event from the other that occurred before it. This blog post is based on Kafka Stream although I found the original idea in this [Flink tutorial](http://training.data-artisans.com/exercises/eventTimeJoin.html), where the idea of event-time join is very well explained. 
 
-Event-time join are often required in practise. For example, given a stream of transactions and another one of customer profile updates, we might want to associate each transaction to the corresponding customer profile as it was known at the moment of the transaction. Or given a stream of traffic information and another one of weather updates, we might want to associate each traffic event with the latest weather that was known at that location. 
+Event-time join are often required in practise. For example, given a stream of transactions and another one of customer profile updates, we might want to associate each transaction to the corresponding customer profile as it was known at the moment of the transaction. Or given a stream of traffic information and another one of weather updates, we might want to associate each traffic event with the latest weather that was known for that location at that point in time. 
 
 Note that an event-time join is not symmetric: performing an event-time join from stream 1 to stream 2 does not yield the same result as performing it from stream 2 to stream 1.
 
@@ -55,9 +55,9 @@ Also, because of delays that could happen during data ingestion, it is typically
 
 This limitation applies also in the case of event-time join: any time we receive a transaction or a car traffic information, we cannot in general be sure that the information we current have concerning user profiles or weather time series is the latest that we will ever be available. We could decide to wait, though how long?
 
-This question of "how long to wait" is one key difference between stream and batch processing. In a batch approach, some data collection process is assumed to have "waited long enough" beforehand so that at the moment of the batch execution, we can consider that "all data is available". Said otherwise, "waiting long enough" is not a concern of the batch implemenation whereas it is a first class citizen in stream processing. 
+This question of "how long to wait" is one key difference between stream and batch processing. In a batch approach, some data collection process is assumed to have "waited long enough" beforehand so that at the moment of the batch execution, we can consider that "all data is available". Said otherwise, "waiting long enough" is not a concern of the batch implementation whereas it is a first class citizen in stream processing. 
 
-In many cases though, a nightly batch that processes the last day's data are nothing less that a manual implementation of a 24h [tumbling window](https://ci.apache.org/projects/flink/flink-docs-release-1.3/dev/windows.html#tumbling-windows). Hiding the stream nature of a dataset behind nightly batches is sometimes hiding too much the complexity related to time by pretending that "all data is available". In many cases, we end up handling ourselves cases like late event arrivals or aggregation over more than one day (e.g. 30 sliding trends), which are much more natural if we use a framework that embrace the infinite time series nature of the dataset. 
+In many cases though, a nightly batch that processes the last day's data are nothing less than a manual implementation of a 24h [tumbling window](https://ci.apache.org/projects/flink/flink-docs-release-1.3/dev/windows.html#tumbling-windows). Hiding the stream nature of a dataset behind nightly batches is sometimes hiding too much the complexity related to time by pretending that "all data is available". In many situations, we end up handling ourselves cases like late event arrivals or aggregations over more than one day (e.g. 30 sliding trends), which are much more natural if we use a framework that embrace the infinite time series nature of the dataset. 
 
 # Why not relying on Kafka Streams event-time based processing
 
@@ -97,7 +97,7 @@ Note that this is all written with Kafka 0.11.0.0 in mind whose API is likely to
 
 - The ability to create a stateful stream by creating a [local though fault-tolerant state stores](https://docs.confluent.io/current/streams/developer-guide.html#state-stores). These state stores are local, persistent (backed by a Kafka topic) and transparently re-created on any node in case of restart. 
 
-- In particular, [window store](https://docs.confluent.io/current/streams/developer-guide.html#fault-tolerant-state-stores) are an awesome feature that greatly simplifies stream processing since they automatically clean up old data from the local buffer. Also, They allow us to store value associated to a key and a timestamp, like this: `kv.put(key, value, timestamp)` and then retrieve all values for this key within a given time range, like this:  `kv.fetch(key, fromTime, toTime)`. 
+- In particular, [window store](https://docs.confluent.io/current/streams/developer-guide.html#fault-tolerant-state-stores) are an awesome feature that greatly simplifies stream processing since they automatically clean up old data from the local buffer. Also, They allow us to store value associated to a key and a timestamp, like this: `store.put(key, value, timestamp)` and then retrieve all values for this key within a given time range, like this:  `store.fetch(key, fromTime, toTime)`. 
 
 - The API allow us to [listen to several topics at once](https://docs.confluent.io/current/streams/javadocs/org/apache/kafka/streams/kstream/KStreamBuilder.html#stream-org.apache.kafka.common.serialization.Serde-org.apache.kafka.common.serialization.Serde-java.lang.String...-) and even to listen to a [topic name regexp](https://docs.confluent.io/current/streams/javadocs/org/apache/kafka/streams/kstream/KStreamBuilder.html#stream-java.util.regex.Pattern-) ! This simple feature removes the need in this case of specific API for multiple inputs like [Flink's CoProcessFunction](https://ci.apache.org/projects/flink/flink-docs-release-1.3/api/java/org/apache/flink/streaming/api/functions/co/CoProcessFunction.html). 
 
@@ -163,7 +163,7 @@ In the `transform()` method we have most of the high level logic mentioned above
 - if we receive a recommendation event, we join it to the mood information we currently have, we record that in the `bestEffortjoinStore` and we emit it 
 
 ```scala
-override def transform(key: String, event: Either[Recommendation, Mood]): KeyValue[String, MoodRec] =
+def transform(key: String, event: Either[Recommendation, Mood]): KeyValue[String, MoodRec] =
   event match {
     case Left(rec) =>
       val joined = join(rec.event_time, rec.consultant, rec.recommendation)
@@ -191,7 +191,7 @@ def join(recommendationTime: Long, consultant: String, recommendation: String): 
 This is only half of the story of course, since we also need to schedule a periodic review of that join result. This is very easy do to in Kafka Streams by simply requesting our `punctuate()` method to be invoked every (say) 1000ms _in event time_ (whose definition depends on how we configured our [timestamp-extractor](https://docs.confluent.io/current/streams/developer-guide.html#streams-developer-guide-timestamp-extractor), and here again keep in mind that [KIP-138](https://cwiki.apache.org/confluence/display/KAFKA/KIP-138%3A+Change+punctuate+semantics) is on its way to revisit that): 
 
 ```scala 
-override def init(context: ProcessorContext): Unit = {    
+def init(context: ProcessorContext): Unit = {    
   context.schedule(1000)
 }
 ```
@@ -200,9 +200,9 @@ override def init(context: ProcessorContext): Unit = {
 And once we're there we're essentially done. All that's left to do is to let `punctuate()` revisit the join result of all recently witnessed consultants and, if any difference is found, re-emit the updated join result. Note in passing the awesome `fetch()` method of the window store which let us easily query a time series by range. The `joinAgain()` method is not shown here, though essentially it just revisit the join result
 
 ```scala 
-override def punctuate(latestEventTime: Long): KeyValue[String, MoodRec] = {
+def punctuate(latestEventTime: Long): KeyValue[String, MoodRec] = {
   allRecentConsultants(until = latestEventTime).foreach {
-    consultantName => joinAgain(consultantName, maxEventTimestamp = latestEventTime - reviewLagDelta)
+    name => joinAgain(name, maxEventTimestamp = latestEventTime - reviewLagDelta)
   }
   null
 }
@@ -215,11 +215,11 @@ Note that my code at that point gets a bit dirty and in particular, lacks some n
 
 # Conclusion
 
-I really love the Kafka Streams abstractions, the duality between logs and tables is beautifully present a bit everywhere, which offers a refreshing way of designing both data processing solution but also plain reactive micro-services. Also, Kafka Streams is just a very thin layer on top of the core functionalities offered by Kafka clusters and Kafka consumers/producers. A KTable is essentially a compacted topics on steroids, a join boils down to pushing key-values to a topic and letting Kafka's paritioning by key co-locating the data, local distributed state stores are event-sourced to Kafka topics again which makes them transparently replicated....
+I really love the Kafka Streams abstractions, the duality between logs and tables is beautifully present a bit everywhere, which offers a refreshing way of designing both data processing solutions but also plain reactive micro-services. Also, Kafka Streams is just a very thin layer on top of the core functionalities offered by Kafka clusters and Kafka consumers/producers. A KTable is essentially a compacted topics on steroids, a join boils down to pushing key-values to a topic and letting Kafka's partitioning by key co-locating the data, local distributed state stores are event-sourced to Kafka topics again which makes them transparently replicated....
 
-This of course means that Kafka streams very tightly coupled to the underlying Kafka cluster. This is a very different positioning that Flink or Spark Structured Streaming which are planned for any streaming input and output.
+This of course means that Kafka streams is very tightly coupled to the underlying Kafka cluster. This is a very different positioning than Flink or Spark Structured Streaming which are planned for various streamed input and output technologies.
 
-I like less the current java-only API which is very OO-based, encourages mutating objects and makes explicit use of null values. For example instances of `Transformer` (and many other API components) must be classes created with null instance members that are later on initialised the `init()`. My preference would have been for relying more on immutable constructs. Likewise differences between scala and java generics semantic imply that [scala code becomes less elegant than what it could be](https://docs.confluent.io/current/streams/faq.html#scala-compile-error-no-type-parameter-java-defined-trait-is-invariant-in-type-t). 
+I like less the current java-only API which is very OO-based, encourages mutating objects and makes explicit use of null values. For example instances of `Transformer` (and several other API components) must be classes created with null instance members that are later on initialised in the `init()`. My preference would have been for relying more on immutable constructs. Likewise differences between scala and java generics semantics imply that [scala code becomes less elegant than what it could be](https://docs.confluent.io/current/streams/faq.html#scala-compile-error-no-type-parameter-java-defined-trait-is-invariant-in-type-t). 
 
 Kafka Streams is a young project though, so one can hope that a functional-oriented and scala based API might be offered at some point in the future (pretty please?)
 
