@@ -87,7 +87,7 @@ min.insync.replicas=2
 
 
 &lt;h3&gt;Kafka producers&lt;/h3&gt;
-&lt;p&gt;Kafka producers and consumer are rich clients that are packed with features like batching, message routing, compression, retries... and all that gets to be parameteriezed as well :) &lt;/p&gt;
+&lt;p&gt;Kafka producers and consumer are rich clients that are packed with features like batching, message routing, compression, retries... and all that gets to be parameterized as well :) &lt;/p&gt;
 &lt;p&gt;One key piece of information to keep in mind is that configuring producers and consumers makes sense when we code directly against their API, &lt;strong&gt;as well when we want to configure Kafka Connect, Kafka Stream, Flink Kafka connector, Spark Kafka connector and pretty much any java or scala component that relies on them&lt;/strong&gt;, simply because, well, all their features still matter once they're wrapped in such tools.  &lt;/p&gt;
 &lt;h4&gt;Basic parameters&lt;/h4&gt;
 &lt;p&gt;&lt;code&gt;bootstrap.servers&lt;/code&gt; should specify a couple of kafka brokers. If at least one of them is still valid at the moment the connection happens, the client will then rely on Kafka service discovery to figure out all the others. &lt;/p&gt;
