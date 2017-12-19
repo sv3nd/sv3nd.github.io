@@ -8,7 +8,7 @@
 &lt;p&gt;The wiser thing to do &lt;em&gt;of course&lt;/em&gt; is renting my services, I'm freelance, see my contact references beside :)  &lt;/p&gt;
 &lt;h3&gt;Broker basic parameters&lt;/h3&gt;
 &lt;p&gt;Let's start with a few comments on Kafka broker basic parameters, maybe located somewhere like &lt;code&gt;etc/kafka/server.properties&lt;/code&gt;&lt;/p&gt;
-&lt;p&gt;First off, each broker must know its enpoint as known by consumers and producers. This is because a Kafka cluster keeps a dynamic list of which broker serves which topic partition. Consumers and producers then obtain that routing information as part of the topic metadata and connect direclty to the appropriate broker when exchanging data. &lt;/p&gt;
+&lt;p&gt;First off, each broker must know its enpoint as known by consumers and producers. This is because a Kafka cluster keeps a dynamic list of which broker serves which topic partition. Consumers and producers then obtain that routing information as part of the topic metadata and connect directly to the appropriate broker when exchanging data. &lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;listeners=PLAINTEXT://your.host.name:9092
 &lt;/pre&gt;&lt;/div&gt;
 
