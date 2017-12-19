@@ -201,12 +201,12 @@ session.timeout.ms=10000
 &lt;/pre&gt;&lt;/div&gt;
 
 
-&lt;p&gt;The Kafka consumer refreshes its knowledge of the metadata describing a topic at fixed interval, as defined below. Little known fact: if your consomer start consuming from a topic &lt;em&gt;before you create it&lt;/em&gt; (it's not going to consumme much, is it?), maybe because some consuming client got deployed a bit too early, it will block, that retry discovering the location of the relevant partition after that period as well. &lt;/p&gt;
+&lt;p&gt;The Kafka consumer refreshes its knowledge of the metadata describing a topic at fixed interval, as defined below. Little known fact: if your consomer start consuming from a topic &lt;em&gt;before you create it&lt;/em&gt; (it's not going to consumme much, is it?), maybe because some consuming client got deployed a bit too early, it will block, then retry discovering the location of the relevant partition after that period as well. &lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;metadata.max.age.ms=300000
 &lt;/pre&gt;&lt;/div&gt;
 
 
-&lt;p&gt;Kafka 0.11 introduced so-called &lt;em&gt;transactions&lt;/em&gt;. Essentially, they try to mimic the isolation feature of ACID transactions by allowing a producer to mark a set of written records, typically accross several topics, as part of the same atomic write operation. Kafka consumer will ignore that feature by default, unless they are configured with &lt;code&gt;isolation.level=read.committed&lt;/code&gt;, in which case any record that is not part of a committed transaction gets discarded. &lt;/p&gt;
+&lt;p&gt;Kafka 0.11 introduced so-called &lt;em&gt;transactions&lt;/em&gt;. Essentially, they try to mimic the &lt;em&gt;read committed&lt;/em&gt; isolation feature of ACID transactions by allowing a producer to mark a set of written records, typically accross several topics, as part of the same atomic write operation. Kafka consumer will ignore that feature by default, unless they are configured with &lt;code&gt;isolation.level=read.committed&lt;/code&gt;, in which case any record that is not part of a committed transaction gets discarded. &lt;/p&gt;
 &lt;p&gt;Note that this does &lt;strong&gt;not&lt;/strong&gt; achieves atomic read: this is an all-or-nothing &lt;em&gt;write&lt;/em&gt; operation: from the read side, there is no way to have an all-or-nothing mechanism. &lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;isolation.level=read_uncommitted
 &lt;/pre&gt;&lt;/div&gt;

@@ -269,12 +269,12 @@ session.timeout.ms=10000
 </pre></div>
 
 
-<p>The Kafka consumer refreshes its knowledge of the metadata describing a topic at fixed interval, as defined below. Little known fact: if your consomer start consuming from a topic <em>before you create it</em> (it's not going to consumme much, is it?), maybe because some consuming client got deployed a bit too early, it will block, that retry discovering the location of the relevant partition after that period as well. </p>
+<p>The Kafka consumer refreshes its knowledge of the metadata describing a topic at fixed interval, as defined below. Little known fact: if your consomer start consuming from a topic <em>before you create it</em> (it's not going to consumme much, is it?), maybe because some consuming client got deployed a bit too early, it will block, then retry discovering the location of the relevant partition after that period as well. </p>
 <div class="highlight"><pre><span></span>metadata.max.age.ms=300000
 </pre></div>
 
 
-<p>Kafka 0.11 introduced so-called <em>transactions</em>. Essentially, they try to mimic the isolation feature of ACID transactions by allowing a producer to mark a set of written records, typically accross several topics, as part of the same atomic write operation. Kafka consumer will ignore that feature by default, unless they are configured with <code>isolation.level=read.committed</code>, in which case any record that is not part of a committed transaction gets discarded. </p>
+<p>Kafka 0.11 introduced so-called <em>transactions</em>. Essentially, they try to mimic the <em>read committed</em> isolation feature of ACID transactions by allowing a producer to mark a set of written records, typically accross several topics, as part of the same atomic write operation. Kafka consumer will ignore that feature by default, unless they are configured with <code>isolation.level=read.committed</code>, in which case any record that is not part of a committed transaction gets discarded. </p>
 <p>Note that this does <strong>not</strong> achieves atomic read: this is an all-or-nothing <em>write</em> operation: from the read side, there is no way to have an all-or-nothing mechanism. </p>
 <div class="highlight"><pre><span></span>isolation.level=read_uncommitted
 </pre></div>
