@@ -9,7 +9,7 @@ As a preparation for a production deployment of Kafka 0.11, I gathered a set of 
 
 ### A grain of salt...
 
-This is all for information only, I honestly think most of the points below are relevant and correct, though mistakes and omissions are likely here and there. 
+This is all for information only, I honestly think most of the points below are relevant and correct, though mistakes and omissions are likely present here and there. 
 
 You should not apply any of this blindly to your production environment and hope for anything to work. 
 
@@ -19,13 +19,13 @@ The wiser thing to do _of course_ is renting my services, I'm freelance, see my 
 
 Let's start with a few comments on Kafka broker basic parameters, maybe located somewhere like `etc/kafka/server.properties`
 
-First off, each broker must know its enpoint as known by consumers and producers. This is because a Kafka cluster keeps a dynamic list of which broker serves with topic partition. Consumers and producers then obtain that routing information as part of the topic metadata and connect direclty to the appropriate broker to exchange data. 
+First off, each broker must know its enpoint as known by consumers and producers. This is because a Kafka cluster keeps a dynamic list of which broker serves which topic partition. Consumers and producers then obtain that routing information as part of the topic metadata and connect direclty to the appropriate broker when exchanging data. 
 
 ```
-listeners = PLAINTEXT://your.host.name:9092
+listeners=PLAINTEXT://your.host.name:9092
 ```
 
-Next, it's a good idea to specify a `chroot` folder in the zookeeper connection string to keep the future flexibility of sharing it with other tools or even another Kafka cluster. Recall that several Kafka broker are considered to be part of the same cluster if they share the same location on a zookeeper ensemble. Zookeeper is super sensible to load and access latency, so sharing it betweeen many frameworks is not always a good idea.
+Next, it's a good idea to specify a `chroot` folder in the zookeeper connection string to keep the future flexibility of sharing it with other tools or even another Kafka cluster. Recall that several Kafka brokers are considered to be part of the same cluster if they share the same location on a zookeeper ensemble. Zookeeper is super sensible to load and access latency, so sharing it betweeen many frameworks is not always a good idea.
 
 ```
 zookeeper.connect=zookeeper1:2181,zookeeper2:2181,zookeeper3:2181/kafka
@@ -50,7 +50,7 @@ The following parameter specifies the number of threads used during startup and 
 num.recovery.threads.per.data.dir=2
 ```
 
-In production, I would disable topic auto-creation, to make sure all topics are created with explictly chosen parameters. I would also tend to disable the deletion of topics. 
+In production, I would disable topic auto-creation, to make sure all topics are created with explictly chosen parameters. I would also tend to disable the deletion of topics: 
 
 ```
 auto.create.topics.enable=false
@@ -58,7 +58,7 @@ auto.create.topics.enable=false
 delete.topic.enable=false
 ```
 
-Default max message size is 1M. That setting can also be set per topic
+Default max message size is 1M. That setting can also be set per topic:
 
 ````
 # this is overridable at topic creation time with --config max.message.bytes
@@ -67,7 +67,7 @@ Default max message size is 1M. That setting can also be set per topic
 
 ### Data retention
 
-Log retention is configured by time and/or by or. If both are specified, whichever condition is true first triggers a cleanup. Time-based retention can be specified in `hour`, `minutes` or `ms`, you should only specify one of those time period, though if you specify several, the smallest time granularity takes precedence. 
+Log retention is configured by time and/or by size. If both are specified, whichever condition is true first triggers a cleanup. Time-based retention can be specified in `hour`, `minutes` or `ms`, you should only specify one of those time period, though if you specify several, the smallest time granularity takes precedence. 
 
 Logs are sliced into segments of the max size or max duration specified in the last two paremeters below. 
 
@@ -90,7 +90,7 @@ log.segment.bytes=268435456
 log.segment.ms=123456
 ```
 
-Consumer have their offsets committed in Kafka now (except if your client handles them explicitly in some other way), so they are also subject to retention. The default is 1 day. If you have a low traffic topic that might receive less than one message per day, your consummers offset would not get updated and could be removed from Kafka. 
+Consumer have their offsets committed in Kafka now (except if your client handles them explicitly in some other way), so they are also subject to retention. The default is 1 day. If you have a low traffic topic that might receive less than one message per day, your consumers offsets would not get updated and could be removed from Kafka. Setting `offsets.retention.minutes` to a higher value should help in such case. 
 
 ```
 # keep consumer offset for two weeks
@@ -101,14 +101,14 @@ offsets.retention.minutes=20160
 
 If a topic is replicated, all read and write operations are performed on the leader partition and all other replicas are just slave copies. Such slave replica is said to be "out-of-sync" if it lags behind the latest records available in its leader. 
 
-In case the leader crashes at a moment when all live replicas are out-of-sync, Kafka will by default not allow such "unclean" replicas to become the new leader since data could be lost and/or consummer could be confused about offset fuzzy business. If you would like to favour availability over data consistency, you can choose to allow such "unclean leader election". Note that you can specify this per topic as well. 
+In case the leader crashes at a moment when all live replicas are out-of-sync, Kafka will by default not allow such "unclean" replicas to become the new leader since data could be lost and/or consumers could be confused about offset fuzzy business. If you would like to favour availability over data consistency, you can choose to allow such "unclean leader election". Note that you can specify this per topic as well. 
 
 ```
 # this is overridable at topic creation time with --config unclean.leader.election.enable
 unclean.leader.election.enable=false
 ```
 
-The following is similar availabiliy vs consistency tradeoff to decide. Data producers have the possibility to request that "all" partition replicas confirm the reception of a record before considering the write operation as successful (cf `acks` parameter below). In case some replicas are known to be out-of-sync, we know they are are not going to provide such acknowledgment at the moment. The parameter below specify the minimum number of replicas that must still be in sync such that we can consider that "all" replica have confirmed the reception of a record.
+The following parameter is a similar availabiliy vs consistency tradeoff: data producers have the possibility to request that "all" partition replicas confirm the reception of a record before considering the write operation as successful (cf `acks` parameter below). In case some replicas are known to be out-of-sync, we know they are not going to provide such acknowledgment at the moment. The parameter below specifies the minimum number of replicas that must still be in sync such that we can consider that "all" replicas have confirmed the reception of a record.
 
 ```
 # this is overridable at topic creation time with --config min.insync.replicas
@@ -117,9 +117,9 @@ min.insync.replicas=2
 
 ### Kafka producers
 
-Kafka producers and consumer are feature-rich clients that are packed with features like batching, message routing, compression, retries... and all that gets to be parameteriezed as well :) 
+Kafka producers and consumer are rich clients that are packed with features like batching, message routing, compression, retries... and all that gets to be parameteriezed as well :) 
 
-One key piece of information to keep in mind is that configuring producers and consumers makes sense when we code directly against their API, **as well when we want to configure Kafka Connect, Kafka Stream, Flink Kafka connector, Spark Kafka connector and pretty much any java or scala app that relies on them**, simply because, well, all their features still matter once they're wrapped in such tools.  
+One key piece of information to keep in mind is that configuring producers and consumers makes sense when we code directly against their API, **as well when we want to configure Kafka Connect, Kafka Stream, Flink Kafka connector, Spark Kafka connector and pretty much any java or scala component that relies on them**, simply because, well, all their features still matter once they're wrapped in such tools.  
 
 
 #### Basic parameters
@@ -130,7 +130,7 @@ One key piece of information to keep in mind is that configuring producers and c
 bootstrap.servers=some-broker:9092.some-other-broker:9092
 ```
 
-Pretty much all a broker knows about a key/value record is that they're made of bytes. Serializers are used by the producer to convert java instances to such bytes. One possible choice here is to rely on [Confluent's avro / schema registry serializer](https://github.com/confluentinc/schema-registry/blob/3.3.1-post/avro-serializer/src/main/java/io/confluent/kafka/serializers/KafkaAvroSerializer.java) to obtain avro records with a schema properly declared and versioned in the schema registry.
+Pretty much all a broker knows about a record payload is that it's a key/value pair made of bytes. Serializers are used by the producer to convert java instances to such byte arrays. One possible choice here is to rely on [Confluent's avro / schema registry serializer](https://github.com/confluentinc/schema-registry/blob/3.3.1-post/avro-serializer/src/main/java/io/confluent/kafka/serializers/KafkaAvroSerializer.java) to obtain avro records with a schema properly declared and versioned in the Conluent schema registry.
 
 ```
 value.serializer=some.class
@@ -155,7 +155,7 @@ request.timeout.ms=30000
 
 #### Delivery guaranties
 
-Kafka producers perform retries for us! As many as we want. `retries` specifies the maximum amount of retries that will be attempted on a retry-able error (like, leader not available) and `retry.backoff.ms` specifies how long to wait between each attempt. 
+Kafka producers perform retries for us! As many as we want. The `retries` parameter specifies the maximum amount of retries that will be attempted on a retry-able error (like, leader not available) and `retry.backoff.ms` specifies how long to wait between each attempt. 
 
 Note that as the producer keep on retrying while potentially also trying to send new traffic, pending messages can quickly occupy some space, so make sure `buffer.memory` is set properly. Finally, once the memory buffer is full (or if topic metadata are impossible to obtain at the moment), the producer will block during `max.block.ms` before blowing up. 
 
@@ -183,7 +183,7 @@ As mentioned above on the section `min.insync.replica`, producer can specify the
 acks=all
 ```
 
-Idempotent producers is one of the awesome feature that Kafka folks gifted to the world in version 0.11. That is a long subject, though in a nutshell it guarantees that successfully written records are written exactly once. Previously, due to some corner cases in the retry mechanism mentione above, some messaged could have ended-up being duplicated in the broker. 
+Idempotent producers is one of the awesome feature that Kafka folks gifted to the world in version 0.11. That is a long subject, though in a nutshell it guarantees that successfully written records are written exactly once to the brokers. Previously, due to some corner cases in the retry mechanism, some message could have ended-up being duplicated. 
 
 ```
 # Idempotent retries features of Kafka, introduced in 0.11, 
@@ -196,7 +196,7 @@ enable.idempotence=false
 
 Kafka producers also automatically batch our records together and send them asynchronously!
 
-In case enough data is available when the producer sends data, it will pack them per batch of `batch.size` bytes. If less data is available it just sent what it has without waiting, unless `linger.ms` is set to a positive value, in which case it waits a bit to get a change to pack more data in batch. 
+In case enough data is available when the producer sends data, it will pack them per batch of `batch.size` bytes. If less data is available it just sends what it has without waiting, unless `linger.ms` is set to a positive value, in which case it waits a bit to get a chance to pack a few more: 
 
 ```
 batch.size=16384
@@ -289,20 +289,20 @@ isolation.level=read_uncommitted
 
 Most of the content above has been heavily inspired from the book chapters and blog posts below.
 
-Kafka, the definitive guide:
+Kafka, the definitive guide - Gwen Shapira, Todd Palino,  Neha Narkhede:
 
-  * [chap 2: installing Kafka](https://www.safaribooksonline.com/library/view/kafka-the-definitive/9781491936153/ch02.html#installing_kafka)
-  * [chap 3: Kafka producers](https://www.safaribooksonline.com/library/view/kafka-the-definitive/9781491936153/ch03.html#writing_messages_to_kafka)
-  * [chap 4: Kafka consumers](https://www.safaribooksonline.com/library/view/kafka-the-definitive/9781491936153/ch04.html)
-  * [chap 6: Reliable data delivery](https://www.safaribooksonline.com/library/view/kafka-the-definitive/9781491936153/ch06.html#reliable_data_delivery)
+  * [chapter 2: installing Kafka](https://www.safaribooksonline.com/library/view/kafka-the-definitive/9781491936153/ch02.html#installing_kafka)
+  * [chapter 3: Kafka producers](https://www.safaribooksonline.com/library/view/kafka-the-definitive/9781491936153/ch03.html#writing_messages_to_kafka)
+  * [chapter 4: Kafka consumers](https://www.safaribooksonline.com/library/view/kafka-the-definitive/9781491936153/ch04.html)
+  * [chapter 6: Reliable data delivery](https://www.safaribooksonline.com/library/view/kafka-the-definitive/9781491936153/ch06.html#reliable_data_delivery)
 
 
-[Udemy - Apache Kafka setup series - Kafka setup and administration](https://www.udemy.com/apache-kafka-series-setup-administration-in-production/)
+[Apache Kafka setup series, Kafka setup and administration (Udemy class) - Stephane Maarek](https://www.udemy.com/apache-kafka-series-setup-administration-in-production/)
 
 Confluent blog: 
 
-  - [Exactly-once Semantics are Possible: Here’s How Kafka Does it](https://www.confluent.io/blog/exactly-once-semantics-are-possible-heres-how-apache-kafka-does-it)
-  - [Transactions in Apache Kafka](https://www.confluent.io/blog/transactions-apache-kafka/)
+  - [Exactly-once Semantics are Possible: Here’s How Kafka Does it - Neha Narkhede](https://www.confluent.io/blog/exactly-once-semantics-are-possible-heres-how-apache-kafka-does-it)
+  - [Transactions in Apache Kafka - Apurva Mehta, Jason Gustafson](https://www.confluent.io/blog/transactions-apache-kafka/)
 
 [Kafka configuration documentation on kafka.org](http://kafka.apache.org/documentation/#configuration)
 

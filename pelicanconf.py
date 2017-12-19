@@ -48,6 +48,6 @@ PLUGINS = [ 'ipynb.markup']
 
 IGNORE_FILES = [".ipynb_checkpoints"]
 
-BIO = "I am a freelance Data Engineer, I focus on scalable data processing pipelines based on Spark, Kafka, Cassandra... I love to code, preferably in Scala, Python and SQL."
+BIO = "I am a freelance Software developper, I currently focus on streaming architectures, Kafka, Scala, Python, SQL,..."
 PROFILE_IMAGE = "blog/svend.jpg"
 
