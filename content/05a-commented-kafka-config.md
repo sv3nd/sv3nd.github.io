@@ -117,7 +117,7 @@ min.insync.replicas=2
 
 ### Kafka producers
 
-Kafka producers and consumer are rich clients that are packed with features like batching, message routing, compression, retries... and all that gets to be parameteriezed as well :) 
+Kafka producers and consumer are rich clients that are packed with features like batching, message routing, compression, retries... and all that gets to be parameterized as well :) 
 
 One key piece of information to keep in mind is that configuring producers and consumers makes sense when we code directly against their API, **as well when we want to configure Kafka Connect, Kafka Stream, Flink Kafka connector, Spark Kafka connector and pretty much any java or scala component that relies on them**, simply because, well, all their features still matter once they're wrapped in such tools.  
 
@@ -268,7 +268,7 @@ session.timeout.ms=10000
 ```
 
 
-The Kafka consumer refreshes its knowledge of the metadata describing a topic at fixed interval, as defined below. Little known fact: if your consomer start consuming from a topic _before you create it_ (it's not going to consumme much, is it?), maybe because some consuming client got deployed a bit too early, it will block, that retry discovering the location of the relevant partition after that period as well. 
+The Kafka consumer refreshes its knowledge of the metadata describing a topic at fixed interval, as defined below. Little known fact: if your consomer start consuming from a topic _before you create it_ (it's not going to consumme much, is it?), maybe because some consuming client got deployed a bit too early, it will block, then retry discovering the location of the relevant partition after that period as well. 
 
 
 ```
@@ -276,7 +276,7 @@ metadata.max.age.ms=300000
 ```
 
 
-Kafka 0.11 introduced so-called _transactions_. Essentially, they try to mimic the isolation feature of ACID transactions by allowing a producer to mark a set of written records, typically accross several topics, as part of the same atomic write operation. Kafka consumer will ignore that feature by default, unless they are configured with `isolation.level=read.committed`, in which case any record that is not part of a committed transaction gets discarded. 
+Kafka 0.11 introduced so-called _transactions_. Essentially, they try to mimic the _read committed_ isolation feature of ACID transactions by allowing a producer to mark a set of written records, typically accross several topics, as part of the same atomic write operation. Kafka consumer will ignore that feature by default, unless they are configured with `isolation.level=read.committed`, in which case any record that is not part of a committed transaction gets discarded. 
 
 Note that this does **not** achieves atomic read: this is an all-or-nothing _write_ operation: from the read side, there is no way to have an all-or-nothing mechanism. 
 
