@@ -19,7 +19,7 @@ The wiser thing to do _of course_ is renting my services, I'm freelance, see my 
 
 Let's start with a few comments on Kafka broker basic parameters, maybe located somewhere like `etc/kafka/server.properties`
 
-First off, each broker must know its enpoint as known by consumers and producers. This is because a Kafka cluster keeps a dynamic list of which broker serves which topic partition. Consumers and producers then obtain that routing information as part of the topic metadata and connect direclty to the appropriate broker when exchanging data. 
+First off, each broker must know its enpoint as known by consumers and producers. This is because a Kafka cluster keeps a dynamic list of which broker serves which topic partition. Consumers and producers then obtain that routing information as part of the topic metadata and connect directly to the appropriate broker when exchanging data. 
 
 ```
 listeners=PLAINTEXT://your.host.name:9092
