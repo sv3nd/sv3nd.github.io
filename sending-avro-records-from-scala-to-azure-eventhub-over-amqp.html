@@ -1,9 +1,17 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" prefix="og: http://ogp.me/ns#">
 	<head>
 		<link href="http://gmpg.org/xfn/11" rel="profile">
 		<meta http-equiv="X-UA-Compatible" content="IE=edge">
 		<meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+		<!-- Metadata -->
+	<meta name="description" content="I am a freelance Software developper, I currently focus on streaming architectures, Kafka, Scala, Python, SQL,...">
+	<meta property="og:description" content="I am a freelance Software developper, I currently focus on streaming architectures, Kafka, Scala, Python, SQL,...">
+	<meta property="og:title" content="Sending Avro records from Scala to Azure eventhub over AMQP" />
+	<meta property="og:type" content="article" />
+	<meta property="og:url" content="https://sv3nd.github.io/sending-avro-records-from-scala-to-azure-eventhub-over-amqp.html" />
+		<meta property="og:image" content="https://sv3nd.github.io/images/blog/svend.jpg" />
 
 		<!-- Enable responsiveness on mobile devices-->
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
@@ -31,14 +39,20 @@
 	</script>
 	</head>
 
-	<body class="theme-base-0d">
+
+	<meta name="description" content="I am a freelance Software developper, I currently focus on streaming architectures, Kafka, Scala, Python, SQL,...">
+	<meta property="og:description" content="I am a freelance Software developper, I currently focus on streaming architectures, Kafka, Scala, Python, SQL,...">
+	<meta property="og:title" content="Sending Avro records from Scala to Azure eventhub over AMQP" />
+	<meta property="og:type" content="article" />
+	<meta property="og:url" content="https://sv3nd.github.io/sending-avro-records-from-scala-to-azure-eventhub-over-amqp.html" />
+
+<body class="theme-base-0d">
 <div class="sidebar">
 	<div class="container sidebar-sticky">
 		<div class="sidebar-about">
 
 			<h1>
 				<a href="/">
-					<img class="profile-picture" src="https://sv3nd.github.io/images/blog/svend.jpg">
 					Svend Vanderveken
 				</a>
 			</h1>
@@ -64,11 +78,13 @@
 			</a>
 		</nav>
 	</div>
-</div>		<div class="content container">
-<div class="post">
-	<h1 class="post-title">Sending Avro records from Scala to Azure eventhub over AMQP</h1>
-	<span class="post-date">Mon 26 June 2017</span>
-	<p>This post illustrates how to emit Avro records to Azure EventHub from scala in such a way that they are directly parsed by the other services of the Azure platform (e.g. Azure Stream Analytics). </p>
+</div>
+  <div class="content container">
+  
+    <div class="post">
+    	<h1 class="post-title">Sending Avro records from Scala to Azure eventhub over AMQP</h1>
+    	<span class="post-date">Mon 26 June 2017</span>
+    	<p>This post illustrates how to emit Avro records to Azure EventHub from scala in such a way that they are directly parsed by the other services of the Azure platform (e.g. Azure Stream Analytics). </p>
 <p>There exists a Java API for communicating with Azure EventHub which is documented as part of the <a href="https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-java-get-started-send">azure documentation</a> and even made <a href="https://github.com/Azure/azure-event-hubs-java">open source on github</a> (things have changed at Microsoft...). That said, the most detailed documentation still seems to be based on the .NET API as manipulated with Visual Studio on Windows. Me being a Scala developer on a Mac, it took me a bit of experimentation to emit Avro messages to EventHub and have an Azure Stream Analytics job parse them correctly.</p>
 <p>The steps below assume that you have access to the Azure portal and have created an EventHub namespace as well as an EventHub instance. If not, see the <a href="https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-create">Azure documentation here</a> for details.</p>
 <p>I posted a fully working example <a href="https://github.com/svendx4f/avro-eventhub-scala-example">here on github</a>.</p>
@@ -184,7 +200,9 @@
 	 		})();
 		</script>
 	<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
-</div>
-		</div>
-	</body>
+    </div>
+  </div>
+
+</body>
+
 </html>
