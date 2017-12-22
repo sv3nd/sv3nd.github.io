@@ -278,7 +278,7 @@ metadata.max.age.ms=300000
 
 Kafka 0.11 introduced so-called _transactions_. Essentially, they try to mimic the _read committed_ isolation feature of ACID transactions by allowing a producer to mark a set of written records, typically accross several topics, as part of the same atomic write operation. Kafka consumer will ignore that feature by default, unless they are configured with `isolation.level=read.committed`, in which case any record that is not part of a committed transaction gets discarded. 
 
-Note that this does **not** achieves atomic read: this is an all-or-nothing _write_ operation: from the read side, there is no way to have an all-or-nothing mechanism. 
+Note that this does **not** achieve atomic read: this is an all-or-nothing _write_ operation: from the read side, there is no way to have an all-or-nothing mechanism. 
 
 ```
 isolation.level=read_uncommitted
