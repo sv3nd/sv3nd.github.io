@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Svend Vanderveken - data</title><link href="https://sv3nd.github.io/" rel="alternate"></link><link href="https://sv3nd.github.io/feeds/data.atom.xml" rel="self"></link><id>https://sv3nd.github.io/</id><updated>2016-10-18T14:22:00+02:00</updated><entry><title>Using model post-processor within scikit-learn pipelines</title><link href="https://sv3nd.github.io/using-model-post-processor-within-scikit-learn-pipelines.html" rel="alternate"></link><published>2016-10-18T14:22:00+02:00</published><updated>2016-10-18T14:22:00+02:00</updated><author><name>Svend Vanderveken</name></author><id>tag:sv3nd.github.io,2016-10-18:/using-model-post-processor-within-scikit-learn-pipelines.html</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Svend Vanderveken - data</title><link href="https://svend.kelesia.com/" rel="alternate"></link><link href="https://svend.kelesia.com/feeds/data.atom.xml" rel="self"></link><id>https://svend.kelesia.com/</id><updated>2016-10-18T14:22:00+02:00</updated><entry><title>Using model post-processor within scikit-learn pipelines</title><link href="https://svend.kelesia.com/using-model-post-processor-within-scikit-learn-pipelines.html" rel="alternate"></link><published>2016-10-18T14:22:00+02:00</published><updated>2016-10-18T14:22:00+02:00</updated><author><name>Svend Vanderveken</name></author><id>tag:svend.kelesia.com,2016-10-18:/using-model-post-processor-within-scikit-learn-pipelines.html</id><summary type="html">
 &lt;div class="cell border-box-sizing text_cell rendered"&gt;
 &lt;div class="prompt input_prompt"&gt;
 &lt;/div&gt;
@@ -1326,7 +1326,7 @@ h6:hover .anchor-link {
     (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
 }
 &lt;/script&gt;
-</content><category term="scikit-learn"></category><category term="machine-learning"></category></entry><entry><title>How to normalize log-likelihood vectors</title><link href="https://sv3nd.github.io/how-to-normalize-log-likelihood-vectors.html" rel="alternate"></link><published>2016-10-02T18:29:00+02:00</published><updated>2016-10-02T18:29:00+02:00</updated><author><name>Svend Vanderveken</name></author><id>tag:sv3nd.github.io,2016-10-02:/how-to-normalize-log-likelihood-vectors.html</id><summary type="html">
+</content><category term="scikit-learn"></category><category term="machine-learning"></category></entry><entry><title>How to normalize log-likelihood vectors</title><link href="https://svend.kelesia.com/how-to-normalize-log-likelihood-vectors.html" rel="alternate"></link><published>2016-10-02T18:29:00+02:00</published><updated>2016-10-02T18:29:00+02:00</updated><author><name>Svend Vanderveken</name></author><id>tag:svend.kelesia.com,2016-10-02:/how-to-normalize-log-likelihood-vectors.html</id><summary type="html">
 &lt;div class="cell border-box-sizing text_cell rendered"&gt;
 &lt;div class="prompt input_prompt"&gt;
 &lt;/div&gt;
