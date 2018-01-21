@@ -24,8 +24,8 @@ LINKS = ()
 
 # Social widget (any font name from http://fontawesome.io/icons/ should work here)
 SOCIAL = (
-         ("github", 'https://github.com/sv3nd'),
-     	 ("twitter", 'https://twitter.com/svend_x4f'),
+         ("github", 'https://github.com/sv3ndk'),
+     	 ("twitter", 'https://twitter.com/sv3ndk'),
      	 ("linkedin", 'https://be.linkedin.com/in/vanderveken'),
      	 ("stack-overflow", 'http://stackoverflow.com/users/3318335/svend'),
          )
@@ -50,4 +50,8 @@ IGNORE_FILES = [".ipynb_checkpoints"]
 
 BIO = "I am a freelance Software developper, I currently focus on streaming architectures, Kafka, Scala, Python, SQL,..."
 PROFILE_IMAGE = "blog/svend.jpg"
+
+STATIC_PATHS = ['images', 'extra/CNAME']
+EXTRA_PATH_METADATA = {'extra/CNAME': {'path': 'CNAME'},}
+
 
