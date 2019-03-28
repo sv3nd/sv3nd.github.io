@@ -1,17 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" prefix="og: http://ogp.me/ns#">
+<html lang="en">
 	<head>
 		<link href="http://gmpg.org/xfn/11" rel="profile">
 		<meta http-equiv="X-UA-Compatible" content="IE=edge">
 		<meta http-equiv="content-type" content="text/html; charset=utf-8">
-
-		<!-- Metadata -->
-	<meta name="description" content="I am a freelance Software developper, I currently focus on streaming architectures, Kafka, Scala, Python, SQL,...">
-	<meta property="og:description" content="I am a freelance Software developper, I currently focus on streaming architectures, Kafka, Scala, Python, SQL,...">
-	<meta property="og:title" content="How to integrate Flink with Confluent's schema registry" />
-	<meta property="og:type" content="article" />
-	<meta property="og:url" content="http://svend.kelesia.com/how-to-integrate-flink-with-confluents-schema-registry.html" />
-		<meta property="og:image" content="http://svend.kelesia.com/images/blog/svend.jpg" />
 
 		<!-- Enable responsiveness on mobile devices-->
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
@@ -22,9 +14,9 @@
 		<link href="//fonts.googleapis.com/" rel="dns-prefetch">
 		<link href="//fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic|Abril+Fatface|PT+Sans:400,400italic,700&amp;subset=latin,latin-ext" rel="stylesheet">
 
-		<link rel="stylesheet" href="http://svend.kelesia.com/theme/css/poole.css" />
-		<link rel="stylesheet" href="http://svend.kelesia.com/theme/css/hyde.css" />
-		<link rel="stylesheet" href="http://svend.kelesia.com/theme/css/syntax.css" />
+		<link rel="stylesheet" href="https://svend.kelesia.com/theme/css/poole.css" />
+		<link rel="stylesheet" href="https://svend.kelesia.com/theme/css/hyde.css" />
+		<link rel="stylesheet" href="https://svend.kelesia.com/theme/css/syntax.css" />
 		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
 
 		<!-- RSS -->
@@ -39,20 +31,14 @@
 	</script>
 	</head>
 
-
-	<meta name="description" content="I am a freelance Software developper, I currently focus on streaming architectures, Kafka, Scala, Python, SQL,...">
-	<meta property="og:description" content="I am a freelance Software developper, I currently focus on streaming architectures, Kafka, Scala, Python, SQL,...">
-	<meta property="og:title" content="How to integrate Flink with Confluent's schema registry" />
-	<meta property="og:type" content="article" />
-	<meta property="og:url" content="http://svend.kelesia.com/how-to-integrate-flink-with-confluents-schema-registry.html" />
-
-<body class="theme-base-0d">
+	<body class="theme-base-0d">
 <div class="sidebar">
 	<div class="container sidebar-sticky">
 		<div class="sidebar-about">
 
 			<h1>
 				<a href="/">
+					<img class="profile-picture" src="https://svend.kelesia.com/images/blog/svend.jpg">
 					Svend Vanderveken
 				</a>
 			</h1>
@@ -67,7 +53,7 @@
 					<a class="sidebar-nav-item" href="https://twitter.com/sv3ndk">
 						<i class="fa fa-twitter"></i>
 					</a>
-					<a class="sidebar-nav-item" href="https://www.linkedin.com/in/sv3ndk">
+					<a class="sidebar-nav-item" href="https://be.linkedin.com/in/vanderveken">
 						<i class="fa fa-linkedin"></i>
 					</a>
 					<a class="sidebar-nav-item" href="http://stackoverflow.com/users/3318335/svend">
@@ -78,13 +64,11 @@
 			</a>
 		</nav>
 	</div>
-</div>
-  <div class="content container">
-  
-    <div class="post">
-    	<h1 class="post-title">How to integrate Flink with Confluent's schema registry</h1>
-    	<span class="post-date">Fri 30 June 2017</span>
-    	<p>This post illustrates how to use Confluent's Avro serializer in order to let a Flink program consume and produce avro messages through Kafka while keeping track of the Avro Schemas in Confluent's schema registry. This can be interresting if the messages are pumped into or out of Kafka with Kafka Connect, Kafka Streams, or just with anything else also integrated with the schema registry.</p>
+</div>		<div class="content container">
+<div class="post">
+	<h1 class="post-title">How to integrate Flink with Confluent's schema registry</h1>
+	<span class="post-date">Fri 30 June 2017</span>
+	<p>This post illustrates how to use Confluent's Avro serializer in order to let a Flink program consume and produce avro messages through Kafka while keeping track of the Avro Schemas in Confluent's schema registry. This can be interresting if the messages are pumped into or out of Kafka with Kafka Connect, Kafka Streams, or just with anything else also integrated with the schema registry.</p>
 <p><strong>Warning</strong>: As of now (Aug 2017), it turns out using Confluent's Avro deserializer as explained below is not ideal when deploying to FLink in standalone mode, because of the way caching is impemented on Avro level. More information in <a href="https://github.com/confluentinc/schema-registry/pull/509#issuecomment-323143951">this Confluent PR</a> as well as in <a href="https://issues.apache.org/jira/browse/FLINK-5633">this FLink JIRA</a>. Hopefully a workaround will be found soon.</p>
 <p>This has been written with the following dependencies in mind: </p>
 <div class="highlight"><pre><span></span><span class="n">libraryDependencies</span> <span class="o">++=</span> <span class="nc">Seq</span><span class="o">(</span>
@@ -230,9 +214,7 @@
 	 		})();
 		</script>
 	<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
-    </div>
-  </div>
-
-</body>
-
+</div>
+		</div>
+	</body>
 </html>

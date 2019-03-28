@@ -1,17 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" prefix="og: http://ogp.me/ns#">
+<html lang="en">
 	<head>
 		<link href="http://gmpg.org/xfn/11" rel="profile">
 		<meta http-equiv="X-UA-Compatible" content="IE=edge">
 		<meta http-equiv="content-type" content="text/html; charset=utf-8">
-
-		<!-- Metadata -->
-			<meta name="description" content="I am a freelance Software developper, I currently focus on streaming architectures, Kafka, Scala, Python, SQL,..." />
-			<meta property="og:description" content="I am a freelance Software developper, I currently focus on streaming architectures, Kafka, Scala, Python, SQL,..." />
-			<meta property="og:title" content="Svend Vanderveken" />
-			<meta property="og:type" content="website" />
-			<meta property="og:url" content="http://svend.kelesia.com" />
-		<meta property="og:image" content="http://svend.kelesia.com/images/blog/svend.jpg" />
 
 		<!-- Enable responsiveness on mobile devices-->
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
@@ -22,9 +14,9 @@
 		<link href="//fonts.googleapis.com/" rel="dns-prefetch">
 		<link href="//fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic|Abril+Fatface|PT+Sans:400,400italic,700&amp;subset=latin,latin-ext" rel="stylesheet">
 
-		<link rel="stylesheet" href="http://svend.kelesia.com/theme/css/poole.css" />
-		<link rel="stylesheet" href="http://svend.kelesia.com/theme/css/hyde.css" />
-		<link rel="stylesheet" href="http://svend.kelesia.com/theme/css/syntax.css" />
+		<link rel="stylesheet" href="https://svend.kelesia.com/theme/css/poole.css" />
+		<link rel="stylesheet" href="https://svend.kelesia.com/theme/css/hyde.css" />
+		<link rel="stylesheet" href="https://svend.kelesia.com/theme/css/syntax.css" />
 		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
 
 		<!-- RSS -->
@@ -39,15 +31,14 @@
 	</script>
 	</head>
 
-
-<body class="theme-base-0d">
+	<body class="theme-base-0d">
 <div class="sidebar">
 	<div class="container sidebar-sticky">
 		<div class="sidebar-about">
 
 			<h1>
 				<a href="/">
-						<img class="profile-picture" src="http://svend.kelesia.com/images/blog/svend.jpg" />
+					<img class="profile-picture" src="https://svend.kelesia.com/images/blog/svend.jpg">
 					Svend Vanderveken
 				</a>
 			</h1>
@@ -62,7 +53,7 @@
 					<a class="sidebar-nav-item" href="https://twitter.com/sv3ndk">
 						<i class="fa fa-twitter"></i>
 					</a>
-					<a class="sidebar-nav-item" href="https://www.linkedin.com/in/sv3ndk">
+					<a class="sidebar-nav-item" href="https://be.linkedin.com/in/vanderveken">
 						<i class="fa fa-linkedin"></i>
 					</a>
 					<a class="sidebar-nav-item" href="http://stackoverflow.com/users/3318335/svend">
@@ -73,80 +64,77 @@
 			</a>
 		</nav>
 	</div>
-</div>	<div class="content container">
-			<div class="posts">
-					<div class="post">
-						<h1 class="post-title" href="http://svend.kelesia.com/a-commented-kafka-configuration.html#a-commented-kafka-configuration">
-							<a href="http://svend.kelesia.com/a-commented-kafka-configuration.html#a-commented-kafka-configuration">A commented Kafka configuration</a>
-						</h1>
-						<span class="post-date">Tue 19 December 2017</span>
-						<p>
-							<p>Diving into Kafka configuration is a beautiful journey into its features. </p>
+</div>		<div class="content container">
+	<div class="posts">
+			<div class="post">
+				<h1 class="post-title" href="https://svend.kelesia.com/a-commented-kafka-configuration.html#a-commented-kafka-configuration">
+					<a href="https://svend.kelesia.com/a-commented-kafka-configuration.html#a-commented-kafka-configuration">A commented Kafka configuration</a>
+				</h1>
+				<span class="post-date">Tue 19 December 2017</span>
+				<p>
+					<p>Diving into Kafka configuration is a beautiful journey into its features. </p>
 <p>As a preparation for a production deployment of Kafka 0.11, I gathered a set of comments on what I think are some interesting parameters. All this amazing wisdom is mostly extracted from the few resources mentioned at the end of this post. </p>
 <h3>A grain of salt...</h3>
 <p>This is all for information only, I honestly think most of the points below are relevant and correct, though mistakes and omissions are likely present here and there. </p>
 <p>You should not apply any of this blindly to your production environment and hope …</p>
-						</p>
-						<a class="read-more" href="a-commented-kafka-configuration.html">Continue reading »</a>
-					</div>
-					<div class="post">
-						<h1 class="post-title" href="http://svend.kelesia.com/event-time-low-latency-joins-with-kafka-streams.html#event-time-low-latency-joins-with-kafka-streams">
-							<a href="http://svend.kelesia.com/event-time-low-latency-joins-with-kafka-streams.html#event-time-low-latency-joins-with-kafka-streams">Event time low-latency joins with Kafka Streams</a>
-						</h1>
-						<span class="post-date">Sun 17 September 2017</span>
-						<p>
-							<p>This post attempts to illustrate the difficulty of performing an event-time join between two time series with a stream processing framework. It also describes one solution based on Kafka Streams 0.11.0.0.</p>
-<p>An event-time join is an attempt to join two time series while taking into account the timestamps. More precisely, for each event from the first time series, it looks up the latest event from the other that occurred before it. This blog post is based on Kafka Stream although I found the original idea in this <a href="http://training.data-artisans.com/exercises/eventTimeJoin.html">Flink tutorial</a>, where the idea of event-time join is very …</p>
-						</p>
-						<a class="read-more" href="event-time-low-latency-joins-with-kafka-streams.html">Continue reading »</a>
-					</div>
-					<div class="post">
-						<h1 class="post-title" href="http://svend.kelesia.com/how-to-integrate-flink-with-confluents-schema-registry.html#how-to-integrate-flink-with-confluents-schema-registry">
-							<a href="http://svend.kelesia.com/how-to-integrate-flink-with-confluents-schema-registry.html#how-to-integrate-flink-with-confluents-schema-registry">How to integrate Flink with Confluent's schema registry</a>
-						</h1>
-						<span class="post-date">Fri 30 June 2017</span>
-						<p>
-							<p>This post illustrates how to use Confluent's Avro serializer in order to let a Flink program consume and produce avro messages through Kafka while keeping track of the Avro Schemas in Confluent's schema registry. This can be interresting if the messages are pumped into or out of Kafka with Kafka Connect, Kafka Streams, or just with anything else also integrated with the schema registry.</p>
-<p><strong>Warning</strong>: As of now (Aug 2017), it turns out using Confluent's Avro deserializer as explained below is not ideal when deploying to FLink in standalone mode, because of the way caching is impemented on Avro level …</p>
-						</p>
-						<a class="read-more" href="how-to-integrate-flink-with-confluents-schema-registry.html">Continue reading »</a>
-					</div>
-					<div class="post">
-						<h1 class="post-title" href="http://svend.kelesia.com/sending-avro-records-from-scala-to-azure-eventhub-over-amqp.html#sending-avro-records-from-scala-to-azure-eventhub-over-amqp">
-							<a href="http://svend.kelesia.com/sending-avro-records-from-scala-to-azure-eventhub-over-amqp.html#sending-avro-records-from-scala-to-azure-eventhub-over-amqp">Sending Avro records from Scala to Azure eventhub over AMQP</a>
-						</h1>
-						<span class="post-date">Mon 26 June 2017</span>
-						<p>
-							<p>This post illustrates how to emit Avro records to Azure EventHub from scala in such a way that they are directly parsed by the other services of the Azure platform (e.g. Azure Stream Analytics). </p>
-<p>There exists a Java API for communicating with Azure EventHub which is documented as part of the <a href="https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-java-get-started-send">azure documentation</a> and even made <a href="https://github.com/Azure/azure-event-hubs-java">open source on github</a> (things have changed at Microsoft...). That said, the most detailed documentation still seems to be based on the .NET API as manipulated with Visual Studio on Windows. Me being a Scala developer on a Mac, it took me a …</p>
-						</p>
-						<a class="read-more" href="sending-avro-records-from-scala-to-azure-eventhub-over-amqp.html">Continue reading »</a>
-					</div>
-					<div class="post">
-						<h1 class="post-title" href="http://svend.kelesia.com/using-model-post-processor-within-scikit-learn-pipelines.html#using-model-post-processor-within-scikit-learn-pipelines">
-							<a href="http://svend.kelesia.com/using-model-post-processor-within-scikit-learn-pipelines.html#using-model-post-processor-within-scikit-learn-pipelines">Using model post-processor within scikit-learn pipelines</a>
-						</h1>
-						<span class="post-date">Tue 18 October 2016</span>
-						<p>
-							
-<div class="cell border-box-sizing text_cell rendered">
-<div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="On-the-lack-of-post-processors">On the lack of post-processors<a class="anchor-link" href="#On-the-lack-of-post-processors">&#182;</a></h2><p><a href="http://scikit-learn.org/stable/modules/pipeline.html#pipeline">Pipelines</a> are a very handy and central feature of the scikit-learn library that enable to chain sequences, or even, in a limited way, DAGs, of data transformers and one machine learning model. They greatly facilitate the application of cross-validation scoring or hyper-parameter search on the resulting pipeline as a whole. They also ease the productization of a machine learning exercise by providing one single encapsulated trained model that can be applied as one instance on a test set or integrated into a production product.</p>
-<p>For a very clear introduction, see also the excellent <a href="http://zacstewart.com/2014/08/05/pipelines-of-featureunions-of-pipelines.html">Using scikit-learn Pipelines and FeatureUnions</a>
-						</p>
-						<a class="read-more" href="using-model-post-processor-within-scikit-learn-pipelines.html">Continue reading »</a>
-					</div>
+				</p>
+				<a class="read-more" href="a-commented-kafka-configuration.html">Continue reading »</a>
 			</div>
-			<div class="pagination">
-
-				<span class="pagination-item older">Newer</span>
-
-				<span class="pagination-item newer"><a href="http://svend.kelesia.com/index2.html">Older</a></span>
-		</div>
+			<div class="post">
+				<h1 class="post-title" href="https://svend.kelesia.com/event-time-low-latency-joins-with-kafka-streams.html#event-time-low-latency-joins-with-kafka-streams">
+					<a href="https://svend.kelesia.com/event-time-low-latency-joins-with-kafka-streams.html#event-time-low-latency-joins-with-kafka-streams">Event time low-latency joins with Kafka Streams</a>
+				</h1>
+				<span class="post-date">Sun 17 September 2017</span>
+				<p>
+					<p>This post attempts to illustrate the difficulty of performing an event-time join between two time series with a stream processing framework. It also describes one solution based on Kafka Streams 0.11.0.0.</p>
+<p>An event-time join is an attempt to join two time series while taking into account the timestamps. More precisely, for each event from the first time series, it looks up the latest event from the other that occurred before it. This blog post is based on Kafka Stream although I found the original idea in this <a href="http://training.data-artisans.com/exercises/eventTimeJoin.html">Flink tutorial</a>, where the idea of event-time join is very …</p>
+				</p>
+				<a class="read-more" href="event-time-low-latency-joins-with-kafka-streams.html">Continue reading »</a>
+			</div>
+			<div class="post">
+				<h1 class="post-title" href="https://svend.kelesia.com/how-to-integrate-flink-with-confluents-schema-registry.html#how-to-integrate-flink-with-confluents-schema-registry">
+					<a href="https://svend.kelesia.com/how-to-integrate-flink-with-confluents-schema-registry.html#how-to-integrate-flink-with-confluents-schema-registry">How to integrate Flink with Confluent's schema registry</a>
+				</h1>
+				<span class="post-date">Fri 30 June 2017</span>
+				<p>
+					<p>This post illustrates how to use Confluent's Avro serializer in order to let a Flink program consume and produce avro messages through Kafka while keeping track of the Avro Schemas in Confluent's schema registry. This can be interresting if the messages are pumped into or out of Kafka with Kafka Connect, Kafka Streams, or just with anything else also integrated with the schema registry.</p>
+<p><strong>Warning</strong>: As of now (Aug 2017), it turns out using Confluent's Avro deserializer as explained below is not ideal when deploying to FLink in standalone mode, because of the way caching is impemented on Avro level …</p>
+				</p>
+				<a class="read-more" href="how-to-integrate-flink-with-confluents-schema-registry.html">Continue reading »</a>
+			</div>
+			<div class="post">
+				<h1 class="post-title" href="https://svend.kelesia.com/sending-avro-records-from-scala-to-azure-eventhub-over-amqp.html#sending-avro-records-from-scala-to-azure-eventhub-over-amqp">
+					<a href="https://svend.kelesia.com/sending-avro-records-from-scala-to-azure-eventhub-over-amqp.html#sending-avro-records-from-scala-to-azure-eventhub-over-amqp">Sending Avro records from Scala to Azure eventhub over AMQP</a>
+				</h1>
+				<span class="post-date">Mon 26 June 2017</span>
+				<p>
+					<p>This post illustrates how to emit Avro records to Azure EventHub from scala in such a way that they are directly parsed by the other services of the Azure platform (e.g. Azure Stream Analytics). </p>
+<p>There exists a Java API for communicating with Azure EventHub which is documented as part of the <a href="https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-java-get-started-send">azure documentation</a> and even made <a href="https://github.com/Azure/azure-event-hubs-java">open source on github</a> (things have changed at Microsoft...). That said, the most detailed documentation still seems to be based on the .NET API as manipulated with Visual Studio on Windows. Me being a Scala developer on a Mac, it took me a …</p>
+				</p>
+				<a class="read-more" href="sending-avro-records-from-scala-to-azure-eventhub-over-amqp.html">Continue reading »</a>
+			</div>
+			<div class="post">
+				<h1 class="post-title" href="https://svend.kelesia.com/using-model-post-processor-within-scikit-learn-pipelines.html#using-model-post-processor-within-scikit-learn-pipelines">
+					<a href="https://svend.kelesia.com/using-model-post-processor-within-scikit-learn-pipelines.html#using-model-post-processor-within-scikit-learn-pipelines">Using model post-processor within scikit-learn pipelines</a>
+				</h1>
+				<span class="post-date">Tue 18 October 2016</span>
+				<p>
+					
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="On-the-lack-of-post-processors">On the lack of post-processors<a class="anchor-link" href="#On-the-lack-of-post-processors">¶</a></h2><p><a href="http://scikit-learn.org/stable/modules/pipeline.html#pipeline">Pipelines</a> are a very handy and central feature of the scikit-learn library that enable to chain sequences, or even, in a limited way, DAGs, of data transformers and one machine learning model. They greatly facilitate the application of cross-validation scoring or hyper-parameter search on the resulting pipeline as a whole. They also ease the productization of a machine learning exercise by providing one single encapsulated trained model that can be applied as one instance on a test set or integrated into a production product.</p>
+<p>For a very clear introduction, see also the excellent <a href="http://zacstewart.com/2014/08/05/pipelines-of-featureunions-of-pipelines.html">Using scikit-learn Pipelines and FeatureUnions</a>
+				</p>
+				<a class="read-more" href="using-model-post-processor-within-scikit-learn-pipelines.html">Continue reading »</a>
+			</div>
 	</div>
+	<div class="pagination">
 
-</body>
+		<span class="pagination-item older">Newer</span>
+
+		<span class="pagination-item newer"><a href="https://svend.kelesia.com/index2.html">Older</a></span>
+	</div>
+		</div>
+	</body>
 </html>
