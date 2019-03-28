@@ -5,8 +5,9 @@ ipython>=4.0
 nbconvert>=4.0
 beautifulsoup4
 ghp-import==0.4.1
-matplotlib==1.5.1
-pandas==0.18.1
-numpy
+matplotlib==2.2.3
+pandas
 scipy
 rpy2
+simple-http-server
+
