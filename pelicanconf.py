@@ -48,7 +48,7 @@ PLUGINS = [ 'ipynb.markup']
 
 IGNORE_FILES = [".ipynb_checkpoints"]
 
-BIO = "I am a freelance Software developper, I currently focus on streaming architectures, Kafka, Scala, Python, SQL,..."
+BIO = "I am a freelance data engineer, I currently focus on streaming architectures, Kafka, Scala, Python, SQL,..."
 PROFILE_IMAGE = "blog/svend.jpg"
 
 STATIC_PATHS = ['images', 'extra/CNAME']
