@@ -1,4 +1,4 @@
-Title: One-to-many Kaka Streams Ktable join
+Title: One-to-many Kafka Streams Ktable join
 Date: 2019-04-30
 Tags: kafka
 Author: Svend Vanderveken
