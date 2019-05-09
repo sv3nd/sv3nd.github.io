@@ -2,6 +2,7 @@ Title: One-to-many Kafka Streams Ktable join
 Date: 2019-04-30
 Tags: kafka
 Author: Svend Vanderveken
+Alias: /one-to-many-kaka-streams-ktable-join.html
 
 Kafka Streams is a lightweight data processing library for Kafka. It's build on top of the Kafka consumer/producer APIs and provides higher level abstractions like streams and tables that can be joined and grouped with some flexibility. 
 

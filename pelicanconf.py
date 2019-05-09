@@ -27,7 +27,7 @@ SOCIAL = (
          ("github", 'https://github.com/sv3ndk'),
      	 ("twitter", 'https://twitter.com/sv3ndk'),
      	 ("linkedin", 'https://be.linkedin.com/in/vanderveken'),
-     	 ("stack-overflow", 'http://stackoverflow.com/users/3318335/svend'),
+     	 ("stack-overflow", 'https://stackoverflow.com/users/3318335/svend'),
          )
 
 GOOGLE_ANALYTICS = 'UA-101598127-1'
@@ -39,12 +39,12 @@ DEFAULT_PAGINATION = 5
 # Uncomment following line if you want document-relative URLs when developing
 #RELATIVE_URLS = True
 
-THEME = '/sten/dev-spaces/sv3ndk/pelican-hyde'
+THEME = '/Users/svend/dev/perso/pelican_themes/pelican-hyde'
 
 MARKUP = ('md', 'ipynb')
 
 PLUGIN_PATHS = ['./plugins']
-PLUGINS = [ 'ipynb.markup']
+PLUGINS = [ 'ipynb.markup', 'pelican_alias']
 
 IGNORE_FILES = [".ipynb_checkpoints"]
 
