@@ -77,41 +77,41 @@
 <h3>Broker basic parameters</h3>
 <p>Let's start with a few comments on Kafka broker basic parameters, maybe located somewhere like <code>etc/kafka/server.properties</code></p>
 <p>First off, each broker must know its enpoint as known by consumers and producers. This is because a Kafka cluster keeps a dynamic list of which broker serves which topic partition. Consumers and producers then obtain that routing information as part of the topic metadata and connect directly to the appropriate broker when exchanging data. </p>
-<div class="highlight"><pre><span></span><span class="n">listeners</span><span class="o">=</span><span class="n">PLAINTEXT</span><span class="p">:</span><span class="o">//</span><span class="n">your</span><span class="p">.</span><span class="k">host</span><span class="p">.</span><span class="n">name</span><span class="p">:</span><span class="mi">9092</span>
+<div class="highlight"><pre><span></span>listeners=PLAINTEXT://your.host.name:9092
 </pre></div>
 
 
 <p>Next, it's a good idea to specify a <code>chroot</code> folder in the zookeeper connection string to keep the future flexibility of sharing it with other tools or even another Kafka cluster. Recall that several Kafka brokers are considered to be part of the same cluster if they share the same location on a zookeeper ensemble. Zookeeper is super sensible to load and access latency, so sharing it betweeen many frameworks is not always a good idea.</p>
-<div class="highlight"><pre><span></span><span class="nv">zookeeper</span>.<span class="k">connect</span><span class="o">=</span><span class="nv">zookeeper1</span>:<span class="mi">2181</span>,<span class="nv">zookeeper2</span>:<span class="mi">2181</span>,<span class="nv">zookeeper3</span>:<span class="mi">2181</span><span class="o">/</span><span class="nv">kafka</span>
+<div class="highlight"><pre><span></span>zookeeper.connect=zookeeper1:2181,zookeeper2:2181,zookeeper3:2181/kafka
 </pre></div>
 
 
 <p>While we're on the subject of zookeeper, the two following can be handy. Note that setting a long timeout is not a magic solution to latency issues since it makes the detection and resolution of crashed brokers slower.</p>
-<div class="highlight"><pre><span></span><span class="n">zookeeper</span><span class="p">.</span><span class="k">connection</span><span class="p">.</span><span class="n">timeout</span><span class="p">.</span><span class="n">ms</span><span class="o">=</span><span class="mi">6000</span>
-<span class="n">zookeeper</span><span class="p">.</span><span class="k">session</span><span class="p">.</span><span class="n">timeout</span><span class="p">.</span><span class="n">ms</span><span class="o">=</span><span class="mi">6000</span>
+<div class="highlight"><pre><span></span>zookeeper.connection.timeout.ms=6000
+zookeeper.session.timeout.ms=6000
 </pre></div>
 
 
 <p>The broker log location can be specified as a comma-separated list of mount points. For higher throughput, one can specify several disks here.</p>
-<div class="highlight"><pre><span></span><span class="n">log</span><span class="p">.</span><span class="n">dirs</span><span class="o">=/</span><span class="k">some</span><span class="o">/</span><span class="k">location</span><span class="p">,</span><span class="o">/</span><span class="k">some</span><span class="o">/</span><span class="n">other</span><span class="o">-</span><span class="k">location</span><span class="o">-</span><span class="k">on</span><span class="o">-</span><span class="n">another</span><span class="o">-</span><span class="n">disk</span>
+<div class="highlight"><pre><span></span>log.dirs=/some/location,/some/other-location-on-another-disk
 </pre></div>
 
 
 <p>The following parameter specifies the number of threads used during startup and  shut-down for cleaning up logs and getting to a stable state. Since they are only used at that moment, increasing it may speedup startup time (especially right after a major failure that requires lots' of cleanup) and should otherwise not impact the performance during the rest of the lifetime of the broker.</p>
-<div class="highlight"><pre><span></span><span class="n">num</span><span class="p">.</span><span class="n">recovery</span><span class="p">.</span><span class="n">threads</span><span class="p">.</span><span class="n">per</span><span class="p">.</span><span class="k">data</span><span class="p">.</span><span class="n">dir</span><span class="o">=</span><span class="mi">2</span>
+<div class="highlight"><pre><span></span>num.recovery.threads.per.data.dir=2
 </pre></div>
 
 
 <p>In production, I would disable topic auto-creation, to make sure all topics are created with explictly chosen parameters. I would also tend to disable the deletion of topics: </p>
-<div class="highlight"><pre><span></span><span class="n">auto</span><span class="p">.</span><span class="k">create</span><span class="p">.</span><span class="n">topics</span><span class="p">.</span><span class="n">enable</span><span class="o">=</span><span class="k">false</span>
+<div class="highlight"><pre><span></span>auto.create.topics.enable=false
 
-<span class="k">delete</span><span class="p">.</span><span class="n">topic</span><span class="p">.</span><span class="n">enable</span><span class="o">=</span><span class="k">false</span>
+delete.topic.enable=false
 </pre></div>
 
 
 <p>Default max message size is 1M. That setting can also be set per topic:</p>
-<div class="highlight"><pre><span></span><span class="o">#</span> <span class="n">this</span> <span class="k">is</span> <span class="n">overridable</span> <span class="k">at</span> <span class="n">topic</span> <span class="n">creation</span> <span class="n">time</span> <span class="k">with</span> <span class="c1">--config max.message.bytes</span>
-<span class="o">#</span><span class="n">message</span><span class="p">.</span><span class="k">max</span><span class="p">.</span><span class="n">bytes</span><span class="o">=</span><span class="mi">1000000</span>
+<div class="highlight"><pre><span></span># this is overridable at topic creation time with --config max.message.bytes
+#message.max.bytes=1000000
 </pre></div>
 
 
@@ -135,22 +135,22 @@ log.segment.ms<span class="o">=</span><span class="m">123456</span>
 
 
 <p>Consumer have their offsets committed in Kafka now (except if your client handles them explicitly in some other way), so they are also subject to retention. The default is 1 day. If you have a low traffic topic that might receive less than one message per day, your consumers offsets would not get updated and could be removed from Kafka. Setting <code>offsets.retention.minutes</code> to a higher value should help in such case. </p>
-<div class="highlight"><pre><span></span># <span class="nv">keep</span> <span class="nv">consumer</span> <span class="nv">offset</span> <span class="k">for</span> <span class="nv">two</span> <span class="nv">weeks</span>
-<span class="nv">offsets</span>.<span class="nv">retention</span>.<span class="nv">minutes</span><span class="o">=</span><span class="mi">20160</span>
+<div class="highlight"><pre><span></span># keep consumer offset for two weeks
+offsets.retention.minutes=20160
 </pre></div>
 
 
 <h3>Broker data availability parameters</h3>
 <p>If a topic is replicated, all read and write operations are performed on the leader partition and all other replicas are just slave copies. Such slave replica is said to be "out-of-sync" if it lags behind the latest records available in its leader. </p>
 <p>In case the leader crashes at a moment when all live replicas are out-of-sync, Kafka will by default not allow such "unclean" replicas to become the new leader since data could be lost and/or consumers could be confused about offset fuzzy business. If you would like to favour availability over data consistency, you can choose to allow such "unclean leader election". Note that you can specify this per topic as well. </p>
-<div class="highlight"><pre><span></span><span class="o">#</span> <span class="n">this</span> <span class="k">is</span> <span class="n">overridable</span> <span class="k">at</span> <span class="n">topic</span> <span class="n">creation</span> <span class="n">time</span> <span class="k">with</span> <span class="c1">--config unclean.leader.election.enable</span>
-<span class="n">unclean</span><span class="p">.</span><span class="n">leader</span><span class="p">.</span><span class="n">election</span><span class="p">.</span><span class="n">enable</span><span class="o">=</span><span class="k">false</span>
+<div class="highlight"><pre><span></span># this is overridable at topic creation time with --config unclean.leader.election.enable
+unclean.leader.election.enable=false
 </pre></div>
 
 
 <p>The following parameter is a similar availabiliy vs consistency tradeoff: data producers have the possibility to request that "all" partition replicas confirm the reception of a record before considering the write operation as successful (cf <code>acks</code> parameter below). In case some replicas are known to be out-of-sync, we know they are not going to provide such acknowledgment at the moment. The parameter below specifies the minimum number of replicas that must still be in sync such that we can consider that "all" replicas have confirmed the reception of a record.</p>
-<div class="highlight"><pre><span></span><span class="o">#</span> <span class="n">this</span> <span class="k">is</span> <span class="n">overridable</span> <span class="k">at</span> <span class="n">topic</span> <span class="n">creation</span> <span class="n">time</span> <span class="k">with</span> <span class="c1">--config min.insync.replicas</span>
-<span class="k">min</span><span class="p">.</span><span class="n">insync</span><span class="p">.</span><span class="n">replicas</span><span class="o">=</span><span class="mi">2</span>
+<div class="highlight"><pre><span></span># this is overridable at topic creation time with --config min.insync.replicas
+min.insync.replicas=2
 </pre></div>
 
 
@@ -159,26 +159,26 @@ log.segment.ms<span class="o">=</span><span class="m">123456</span>
 <p>One key piece of information to keep in mind is that configuring producers and consumers makes sense when we code directly against their API, <strong>as well when we want to configure Kafka Connect, Kafka Stream, Flink Kafka connector, Spark Kafka connector and pretty much any java or scala component that relies on them</strong>, simply because, well, all their features still matter once they're wrapped in such tools.  </p>
 <h4>Basic parameters</h4>
 <p><code>bootstrap.servers</code> should specify a couple of kafka brokers. If at least one of them is still valid at the moment the connection happens, the client will then rely on Kafka service discovery to figure out all the others. </p>
-<div class="highlight"><pre><span></span><span class="n">bootstrap</span><span class="p">.</span><span class="n">servers</span><span class="o">=</span><span class="k">some</span><span class="o">-</span><span class="n">broker</span><span class="p">:</span><span class="mi">9092</span><span class="p">.</span><span class="k">some</span><span class="o">-</span><span class="n">other</span><span class="o">-</span><span class="n">broker</span><span class="p">:</span><span class="mi">9092</span>
+<div class="highlight"><pre><span></span>bootstrap.servers=some-broker:9092.some-other-broker:9092
 </pre></div>
 
 
 <p>Pretty much all a broker knows about a record payload is that it's a key/value pair made of bytes. Serializers are used by the producer to convert java instances to such byte arrays. One possible choice here is to rely on <a href="https://github.com/confluentinc/schema-registry/blob/3.3.1-post/avro-serializer/src/main/java/io/confluent/kafka/serializers/KafkaAvroSerializer.java">Confluent's avro / schema registry serializer</a> to obtain avro records with a schema properly declared and versioned in the Conluent schema registry.</p>
-<div class="highlight"><pre><span></span><span class="n">value</span><span class="p">.</span><span class="n">serializer</span><span class="o">=</span><span class="k">some</span><span class="p">.</span><span class="k">class</span>
+<div class="highlight"><pre><span></span>value.serializer=some.class
 
-<span class="k">key</span><span class="p">.</span><span class="n">serializer</span><span class="o">=</span><span class="k">some</span><span class="p">.</span><span class="k">class</span>
+key.serializer=some.class
 </pre></div>
 
 
 <p>Producers also optionally handle data compression for us. For maximum throughput, there is a tradeoff to be experimentally found between message size and cpu time spent (de)compressing it.</p>
-<div class="highlight"><pre><span></span><span class="o">#</span> <span class="n">compression</span> <span class="n">codec</span><span class="p">.</span> 
-<span class="o">#</span> <span class="ss">&quot;none&quot;</span><span class="p">,</span> <span class="ss">&quot;snappy&quot;</span><span class="p">,</span> <span class="ss">&quot;lz4&quot;</span> <span class="k">or</span> <span class="ss">&quot;gzip&quot;</span>
-<span class="n">compression</span><span class="p">.</span><span class="k">type</span><span class="o">=</span><span class="n">lz4</span>
+<div class="highlight"><pre><span></span># compression codec. 
+# &quot;none&quot;, &quot;snappy&quot;, &quot;lz4&quot; or &quot;gzip&quot;
+compression.type=lz4
 </pre></div>
 
 
 <p>The following controls the maximum amount of time the client will wait for the response of a request.</p>
-<div class="highlight"><pre><span></span><span class="n">request</span><span class="p">.</span><span class="n">timeout</span><span class="p">.</span><span class="n">ms</span><span class="o">=</span><span class="mi">30000</span>
+<div class="highlight"><pre><span></span>request.timeout.ms=30000
 </pre></div>
 
 
@@ -187,96 +187,96 @@ log.segment.ms<span class="o">=</span><span class="m">123456</span>
 <p>Note that as the producer keep on retrying while potentially also trying to send new traffic, pending messages can quickly occupy some space, so make sure <code>buffer.memory</code> is set properly. Finally, once the memory buffer is full (or if topic metadata are impossible to obtain at the moment), the producer will block during <code>max.block.ms</code> before blowing up. </p>
 <p>I guess this is Kafka's take on back-pressure. </p>
 <p>Really, if we care about data consistency, and assuming all upstreams components are behaving accordingly, blocking might be the best thing to do here. Well, blowing up might also be the way. Each case should be designed. </p>
-<div class="highlight"><pre><span></span><span class="o">#</span> <span class="n">this</span> <span class="k">default</span> <span class="k">to</span> <span class="mi">0</span><span class="p">,</span> <span class="n">unless</span> <span class="n">you</span> <span class="n">enabled</span> <span class="n">idempotence</span>
-<span class="n">retries</span><span class="o">=</span><span class="mi">2147483647</span>
+<div class="highlight"><pre><span></span># this default to 0, unless you enabled idempotence
+retries=2147483647
 
-<span class="n">retry</span><span class="p">.</span><span class="n">backoff</span><span class="p">.</span><span class="n">ms</span><span class="o">=</span><span class="mi">100</span>
+retry.backoff.ms=100
 
-<span class="n">buffer</span><span class="p">.</span><span class="n">memory</span><span class="o">=</span><span class="mi">33554432</span>
+buffer.memory=33554432
 
-<span class="k">max</span><span class="p">.</span><span class="n">block</span><span class="p">.</span><span class="n">ms</span><span class="o">=</span><span class="mi">60000</span>
+max.block.ms=60000
 </pre></div>
 
 
 <p>As mentioned above on the section <code>min.insync.replica</code>, producer can specify the amount of required acknowledgments for a write to be considered successful. </p>
-<div class="highlight"><pre><span></span><span class="o">#</span> <span class="n">this</span> <span class="k">defaults</span> <span class="k">to</span> <span class="mi">1</span><span class="p">,</span> <span class="n">unless</span> <span class="n">you</span> <span class="n">enabled</span> <span class="n">idempotence</span>
-<span class="n">acks</span><span class="o">=</span><span class="k">all</span>
+<div class="highlight"><pre><span></span># this defaults to 1, unless you enabled idempotence
+acks=all
 </pre></div>
 
 
 <p>Idempotent producers is one of the awesome feature that Kafka folks gifted to the world in version 0.11. That is a long subject, though in a nutshell it guarantees that successfully written records are written exactly once to the brokers. Previously, due to some corner cases in the retry mechanism, some message could have ended-up being duplicated. </p>
-<div class="highlight"><pre><span></span><span class="o">#</span> <span class="n">Idempotent</span> <span class="n">retries</span> <span class="n">features</span> <span class="k">of</span> <span class="n">Kafka</span><span class="p">,</span> <span class="n">introduced</span> <span class="k">in</span> <span class="mi">0</span><span class="p">.</span><span class="mi">11</span><span class="p">,</span> 
-<span class="o">#</span> <span class="n">Part</span> <span class="k">of</span> <span class="n">components</span> <span class="n">enabing</span> <span class="n">Kafka</span> <span class="n">Streams</span> <span class="n">exactly</span><span class="o">-</span><span class="n">once</span> <span class="n">processing</span> <span class="n">semantics</span><span class="p">.</span>
-<span class="n">enable</span><span class="p">.</span><span class="n">idempotence</span><span class="o">=</span><span class="k">false</span>
+<div class="highlight"><pre><span></span># Idempotent retries features of Kafka, introduced in 0.11, 
+# Part of components enabing Kafka Streams exactly-once processing semantics.
+enable.idempotence=false
 </pre></div>
 
 
 <h4>Output record batching</h4>
 <p>Kafka producers also automatically batch our records together and send them asynchronously!</p>
 <p>In case enough data is available when the producer sends data, it will pack them per batch of <code>batch.size</code> bytes. If less data is available it just sends what it has without waiting, unless <code>linger.ms</code> is set to a positive value, in which case it waits a bit to get a chance to pack a few more: </p>
-<div class="highlight"><pre><span></span><span class="n">batch</span><span class="p">.</span><span class="k">size</span><span class="o">=</span><span class="mi">16384</span>
+<div class="highlight"><pre><span></span>batch.size=16384
 
-<span class="n">linger</span><span class="p">.</span><span class="n">ms</span><span class="o">=</span><span class="mi">0</span>
+linger.ms=0
 </pre></div>
 
 
 <p>By default, the producer will wait for a batch to be acknowledged, as specified by <code>acks</code> above, before sending the next batch. For potentially faster throughput, we set the following parameter to some value greater than one to specify the maximum amount of such un-acknowledged batches that we allow.</p>
 <p><strong>Gotcha</strong>: setting this to anything else than 1 destroys the per-topic ordering guarantee of Kafka, simply because some in-flight batches might fail and be retried, while others might go through, in any order.</p>
-<div class="highlight"><pre><span></span># <span class="k">If</span> <span class="nv">set</span> <span class="nv">enable</span>.<span class="nv">idempotence</span> <span class="nv">to</span> <span class="nv">true</span>, <span class="nv">it</span> <span class="nv">may</span> <span class="nv">not</span> <span class="nv">be</span> <span class="nv">greater</span> <span class="nv">than</span> <span class="mi">5</span>
-#<span class="nv">max</span>.<span class="nv">in</span>.<span class="nv">flight</span>.<span class="nv">requests</span>.<span class="nv">per</span>.<span class="nv">connection</span><span class="o">=</span><span class="mi">1</span>
+<div class="highlight"><pre><span></span># If set enable.idempotence to true, it may not be greater than 5
+#max.in.flight.requests.per.connection=1
 </pre></div>
 
 
 <h3>Kafka consummers</h3>
 <h4>Basic parameters</h4>
 <p>Kafka consumer group share the read load when reading from topics. </p>
-<div class="highlight"><pre><span></span><span class="k">group</span><span class="p">.</span><span class="n">id</span><span class="o">=</span><span class="ss">&quot;my client&quot;</span>
+<div class="highlight"><pre><span></span>group.id=&quot;my client&quot;
 </pre></div>
 
 
 <p>See producer discussion regarding broker endpoint and serialisers</p>
-<div class="highlight"><pre><span></span><span class="n">bootstrap</span><span class="p">.</span><span class="n">servers</span><span class="o">=</span><span class="k">some</span><span class="o">-</span><span class="n">broker</span><span class="p">:</span><span class="mi">9092</span><span class="p">.</span><span class="k">some</span><span class="o">-</span><span class="n">other</span><span class="o">-</span><span class="n">broker</span><span class="p">:</span><span class="mi">9092</span>
+<div class="highlight"><pre><span></span>bootstrap.servers=some-broker:9092.some-other-broker:9092
 
-<span class="n">value</span><span class="p">.</span><span class="n">deserializer</span><span class="o">=</span><span class="k">some</span><span class="p">.</span><span class="k">class</span>
+value.deserializer=some.class
 
-<span class="k">key</span><span class="p">.</span><span class="n">deserializer</span><span class="o">=</span><span class="k">some</span><span class="p">.</span><span class="k">class</span>
+key.deserializer=some.class
 </pre></div>
 
 
 <p><code>fetch.min.bytes=1</code> means the consumer will start reading as early as at least one message of at least one byte is available. Forcing higher values here might lead to reading by larger chunks and relying on less network round trips. </p>
 <p>In a similar fashion, <code>max.poll.records</code> specifies, well, the maximum number of message to fetch each time. </p>
-<div class="highlight"><pre><span></span><span class="k">fetch</span><span class="p">.</span><span class="k">min</span><span class="p">.</span><span class="n">bytes</span><span class="o">=</span><span class="mi">1</span>
+<div class="highlight"><pre><span></span>fetch.min.bytes=1
 
-<span class="k">max</span><span class="p">.</span><span class="n">poll</span><span class="p">.</span><span class="n">records</span><span class="o">=</span><span class="mi">500</span>
+max.poll.records=500
 </pre></div>
 
 
 <p>The following specifies where to start reading a topic when a consumer appears and does not have a previous offset to start from. This is the typical situation that happens when a new consumer group is created, although it can also be relevant if that offset existed in the past but disappeared due to the <code>offsets.retention.minutes</code> parameter mentioned above. <code>latest</code> will make the consumer tail the log while <code>earliest</code> will (re)-start from the beginning.</p>
-<div class="highlight"><pre><span></span><span class="n">auto</span><span class="p">.</span><span class="k">offset</span><span class="p">.</span><span class="k">reset</span><span class="o">=</span><span class="n">earliest</span>
+<div class="highlight"><pre><span></span>auto.offset.reset=earliest
 </pre></div>
 
 
 <p>Consumer offsets get committed by default to a Kafka topics. That is a reasonnable default, though sometimes you might prefer to handle them yourself. For example this <a href="http://blog.cloudera.com/blog/2017/06/offset-management-for-apache-kafka-with-apache-spark-streaming/">blog post by Guru Medasani shows how to commit offsets with the processed data in Hbase</a>.</p>
-<div class="highlight"><pre><span></span><span class="n">enable</span><span class="p">.</span><span class="n">auto</span><span class="p">.</span><span class="k">commit</span><span class="o">=</span><span class="k">true</span>
+<div class="highlight"><pre><span></span>enable.auto.commit=true
 </pre></div>
 
 
 <h4>Group robustness and record delivery guarantees</h4>
 <p>A consumer instance needs to be considered alive to remain part of a consumer group. If it fails to emit hearbeats for more than <code>session.timeout.ms</code>, it gets kicked out and a group rebalance happens. </p>
-<div class="highlight"><pre><span></span><span class="n">heartbeat</span><span class="p">.</span><span class="nb">interval</span><span class="p">.</span><span class="n">ms</span><span class="o">=</span><span class="mi">3000</span>
+<div class="highlight"><pre><span></span>heartbeat.interval.ms=3000
 
-<span class="k">session</span><span class="p">.</span><span class="n">timeout</span><span class="p">.</span><span class="n">ms</span><span class="o">=</span><span class="mi">10000</span>
+session.timeout.ms=10000
 </pre></div>
 
 
 <p>The Kafka consumer refreshes its knowledge of the metadata describing a topic at fixed interval, as defined below. Little known fact: if your consomer start consuming from a topic <em>before you create it</em> (it's not going to consumme much, is it?), maybe because some consuming client got deployed a bit too early, it will block, then retry discovering the location of the relevant partition after that period as well. </p>
-<div class="highlight"><pre><span></span><span class="n">metadata</span><span class="p">.</span><span class="k">max</span><span class="p">.</span><span class="n">age</span><span class="p">.</span><span class="n">ms</span><span class="o">=</span><span class="mi">300000</span>
+<div class="highlight"><pre><span></span>metadata.max.age.ms=300000
 </pre></div>
 
 
 <p>Kafka 0.11 introduced so-called <em>transactions</em>. Essentially, they try to mimic the <em>read committed</em> isolation feature of ACID transactions by allowing a producer to mark a set of written records, typically accross several topics, as part of the same atomic write operation. Kafka consumer will ignore that feature by default, unless they are configured with <code>isolation.level=read.committed</code>, in which case any record that is not part of a committed transaction gets discarded. </p>
 <p>Note that this does <strong>not</strong> achieve atomic read: this is an all-or-nothing <em>write</em> operation: from the read side, there is no way to have an all-or-nothing mechanism. </p>
-<div class="highlight"><pre><span></span><span class="k">isolation</span><span class="p">.</span><span class="k">level</span><span class="o">=</span><span class="n">read_uncommitted</span>
+<div class="highlight"><pre><span></span>isolation.level=read_uncommitted
 </pre></div>
 
 

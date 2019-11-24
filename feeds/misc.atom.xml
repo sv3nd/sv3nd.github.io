@@ -1,5 +1,121 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Svend Vanderveken - misc</title><link href="https://svend.kelesia.com/" rel="alternate"></link><link href="https://svend.kelesia.com/feeds/misc.atom.xml" rel="self"></link><id>https://svend.kelesia.com/</id><updated>2019-04-30T00:00:00+02:00</updated><entry><title>One-to-many Kafka Streams Ktable join</title><link href="https://svend.kelesia.com/one-to-many-kafka-streams-ktable-join.html" rel="alternate"></link><published>2019-04-30T00:00:00+02:00</published><updated>2019-04-30T00:00:00+02:00</updated><author><name>Svend Vanderveken</name></author><id>tag:svend.kelesia.com,2019-04-30:/one-to-many-kafka-streams-ktable-join.html</id><summary type="html">&lt;p&gt;Kafka Streams is a lightweight data processing library for Kafka. It's build on top of the Kafka consumer/producer APIs and provides higher level abstractions like streams and tables that can be joined and grouped with some flexibility. &lt;/p&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Svend Vanderveken - misc</title><link href="https://svend.kelesia.com/" rel="alternate"></link><link href="https://svend.kelesia.com/feeds/misc.atom.xml" rel="self"></link><id>https://svend.kelesia.com/</id><updated>2019-11-24T00:00:00+01:00</updated><entry><title>AWS MSK secure Python Kafka client</title><link href="https://svend.kelesia.com/aws-msk-secure-python-kafka-client.html" rel="alternate"></link><published>2019-11-24T00:00:00+01:00</published><updated>2019-11-24T00:00:00+01:00</updated><author><name>Svend Vanderveken</name></author><id>tag:svend.kelesia.com,2019-11-24:/aws-msk-secure-python-kafka-client.html</id><summary type="html">&lt;p&gt;This blog describes how to write a secured python client for AWS MSK (i.e. Kafka) using TLS for authentication. &lt;/p&gt;
+&lt;p&gt;Kafka offers various security options, including traffic encryption with TLS, client authentication with either TLS or SASL, and ACL for authorization. AWS MSK, the Kafka offering of AWS, currently only supports TLS as authentication mechanism. MSK is also &lt;a href="https://docs.aws.amazon.com/msk/latest/developerguide/security_iam_service-with-iam.html"&gt;integrated with AWS IAM&lt;/a&gt;, although not for controlling access at topic granularity but rather for cluster administration tasks (e.g. &lt;em&gt;describeCluster&lt;/em&gt;,...)&lt;/p&gt;
+&lt;p&gt;In case you are interested in writting a java or scala client instead, have a look at &lt;a href="https://docs.aws.amazon.com/msk/latest/developerguide/msk-authentication.html"&gt;the official MSK documentation …&lt;/a&gt;&lt;/p&gt;</summary><content type="html">&lt;p&gt;This blog describes how to write a secured python client for AWS MSK (i.e. Kafka) using TLS for authentication. &lt;/p&gt;
+&lt;p&gt;Kafka offers various security options, including traffic encryption with TLS, client authentication with either TLS or SASL, and ACL for authorization. AWS MSK, the Kafka offering of AWS, currently only supports TLS as authentication mechanism. MSK is also &lt;a href="https://docs.aws.amazon.com/msk/latest/developerguide/security_iam_service-with-iam.html"&gt;integrated with AWS IAM&lt;/a&gt;, although not for controlling access at topic granularity but rather for cluster administration tasks (e.g. &lt;em&gt;describeCluster&lt;/em&gt;,...)&lt;/p&gt;
+&lt;p&gt;In case you are interested in writting a java or scala client instead, have a look at &lt;a href="https://docs.aws.amazon.com/msk/latest/developerguide/msk-authentication.html"&gt;the official MSK documentation&lt;/a&gt;, which has served as the basis for this post. &lt;/p&gt;
+&lt;h1&gt;Cloud side setup&lt;/h1&gt;
+&lt;h2&gt;AWS ACM PCA&lt;/h2&gt;
+&lt;p&gt;The TLS certificate that the client will use as proof of identity (see below) must be trusted by MSK. At present, the only way (that I know of) to achieve this is to create a certificate authority on AWS, link it to our MSK cluster and then use it to create certificates. &lt;/p&gt;
+&lt;p&gt;For more information about AWS PCA, head to &lt;a href="https://docs.aws.amazon.com/acm-pca/latest/userguide/PcaWelcome.html"&gt;AWS PCA documentation&lt;/a&gt;&lt;/p&gt;
+&lt;h2&gt;Enabling TLS on MSK&lt;/h2&gt;
+&lt;p&gt;When configuring the MSK cluster, make sure you enable the TLS endpoint. It is possible to keep both the PLAINTEXT and the TLS endpoint open, although in production disabling PLAINTEXT is of course recommended. &lt;/p&gt;
+&lt;p&gt;Also, make sure to enable TLS authentication, associating the ACM PCA mentioned above. &lt;/p&gt;
+&lt;p&gt;Your resulting MSK config should kind of look like this: &lt;/p&gt;
+&lt;p&gt;&lt;img src="images/07-Python-client-to-MSK-Kafka-secured-with-TLS/aws-msk-config.png" width=700px  /&gt;&lt;/p&gt;
+&lt;p&gt;When connecting to the TLS endpoint, the principal of the application will be the one of its certificate, whereas when connecting over PLAINTEXT, its principal will be &lt;code&gt;ANONYMOUS&lt;/code&gt;. &lt;/p&gt;
+&lt;h2&gt;Protecting the ACLs&lt;/h2&gt;
+&lt;p&gt;The current version of Kafka stores ACLs in Zookeeper, which should therefore be carefully secured well, as &lt;a href="https://docs.aws.amazon.com/msk/latest/developerguide/security_iam_service-with-iam.html"&gt;described on the AWS documentation&lt;/a&gt;. &lt;/p&gt;
+&lt;p&gt;ACL can also be edited directly via the Kafka brokers, using the &lt;a href="https://kafka.apache.org/24/javadoc/index.html?org/apache/kafka/clients/admin/AdminClient.html"&gt;Kafka admin api&lt;/a&gt;, so you also want to protect this access as well, by &lt;a href="https://docs.confluent.io/current/kafka/authorization.html#creating-non-super-user-acl-administrators"&gt;restricting access to "ALTER --cluster"&lt;/a&gt; as appropriate.&lt;/p&gt;
+&lt;h1&gt;ACL&lt;/h1&gt;
+&lt;p&gt;We're going to write a python application that reads from &lt;code&gt;topic-A&lt;/code&gt; and writes to &lt;code&gt;topic-B&lt;/code&gt;. This application will use &lt;code&gt;The-Great-Danton&lt;/code&gt; as principal and &lt;code&gt;Danton&lt;/code&gt; as Kafka consumer group id. &lt;/p&gt;
+&lt;p&gt;Let's create the ACLs appropriate to this scenario: &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;kafka-acls &lt;span class="se"&gt;\&lt;/span&gt;
+--authorizer-properties zookeeper.connect&lt;span class="o"&gt;=&lt;/span&gt;...zookeeper URL here... &lt;span class="se"&gt;\&lt;/span&gt;
+--add --allow-principal &lt;span class="s2"&gt;&amp;quot;User:CN=The-Great-Danton&amp;quot;&lt;/span&gt; &lt;span class="se"&gt;\&lt;/span&gt;
+--consumer &lt;span class="se"&gt;\&lt;/span&gt;
+--group Danton &lt;span class="se"&gt;\&lt;/span&gt;
+--topic topic-A
+
+kafka-acls &lt;span class="se"&gt;\&lt;/span&gt;
+ --authorizer-properties zookeeper.connect&lt;span class="o"&gt;=&lt;/span&gt;...zookeeper URL here... &lt;span class="se"&gt;\&lt;/span&gt;
+ --add --allow-principal &lt;span class="s2"&gt;&amp;quot;User:CN=The-Great-Danton&amp;quot;&lt;/span&gt; &lt;span class="se"&gt;\&lt;/span&gt;
+ --producer &lt;span class="se"&gt;\&lt;/span&gt;
+ --topic topic-B
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h1&gt;Client certificate creation&lt;/h1&gt;
+&lt;p&gt;We now need to create the application private key as well as obtain a certificate signed by our ACM PCA. &lt;/p&gt;
+&lt;p&gt;First, create a private key and a certificate signing request (CSR):&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;openssl req &lt;span class="se"&gt;\&lt;/span&gt;
+       -newkey rsa:2048 -nodes -keyout danton-key.pem &lt;span class="se"&gt;\&lt;/span&gt;
+       -subj &lt;span class="s2"&gt;&amp;quot;/CN=The-Great-Danton&amp;quot;&lt;/span&gt; &lt;span class="se"&gt;\&lt;/span&gt;
+       -out danton.csr
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Submit this CSR to the AWS PCA instance: &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;aws acm-pca issue-certificate &lt;span class="se"&gt;\&lt;/span&gt;
+    --certificate-authority-arn ...the ACM PCA arn here... &lt;span class="se"&gt;\&lt;/span&gt;
+    --csr file://./danton.csr &lt;span class="se"&gt;\&lt;/span&gt;
+    --signing-algorithm &lt;span class="s2"&gt;&amp;quot;SHA256WITHRSA&amp;quot;&lt;/span&gt; &lt;span class="se"&gt;\&lt;/span&gt;
+    --validity &lt;span class="nv"&gt;Value&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="m"&gt;100&lt;/span&gt;,Type&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;DAYS&amp;quot;&lt;/span&gt; 
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;If all goes well, you should obtain in return an ARN where you can download your signed certificate: &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;quot;CertificateArn&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;arn:aws:acm-pca:eu-central-1:...&amp;quot;&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Go ahead and fetch it: &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;aws acm-pca get-certificate &lt;span class="se"&gt;\&lt;/span&gt;
+    --certificate-authority-arn ...the ACM PCA arn here... &lt;span class="se"&gt;\&lt;/span&gt;
+    --certificate-arn ...the certificate ARN here... &lt;span class="p"&gt;|&lt;/span&gt; &lt;span class="se"&gt;\&lt;/span&gt;
+    jq &lt;span class="s1"&gt;&amp;#39;.Certificate, .CertificateChain&amp;#39;&lt;/span&gt; &lt;span class="p"&gt;|&lt;/span&gt; &lt;span class="se"&gt;\&lt;/span&gt;
+    sed &lt;span class="s1"&gt;&amp;#39;s/\\n/\n/g&amp;#39;&lt;/span&gt; &lt;span class="p"&gt;|&lt;/span&gt; &lt;span class="se"&gt;\&lt;/span&gt;
+    tr -d &lt;span class="se"&gt;\&amp;quot;&lt;/span&gt; &amp;gt; danton-certificate.pem
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;And you should be good to go. The files you need from the above are:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;danton-key.pem&lt;/code&gt;, your private key&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;danton-certificate.pem&lt;/code&gt;, your signed certificate&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h1&gt;Python code&lt;/h1&gt;
+&lt;p&gt;Let's use Confluent's &lt;a href="https://github.com/confluentinc/confluent-kafka-python"&gt;python kafka client&lt;/a&gt; to write the application&lt;/p&gt;
+&lt;p&gt;Armed with the setup above, a python consumer using TLS authentication is as simple as: &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;confluent_kafka&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;Consumer&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;Producer&lt;/span&gt;
+
+&lt;span class="n"&gt;model_consumer&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;Consumer&lt;/span&gt;&lt;span class="p"&gt;({&lt;/span&gt;
+    &lt;span class="s1"&gt;&amp;#39;bootstrap.servers&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="o"&gt;...&lt;/span&gt; &lt;span class="n"&gt;the&lt;/span&gt; &lt;span class="n"&gt;brokers&lt;/span&gt; &lt;span class="n"&gt;TLS&lt;/span&gt; &lt;span class="n"&gt;endpoint&lt;/span&gt; &lt;span class="n"&gt;here&lt;/span&gt;&lt;span class="o"&gt;...&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="s1"&gt;&amp;#39;group.id&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;Danton&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="s1"&gt;&amp;#39;security.protocol&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;ssl&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="s1"&gt;&amp;#39;ssl.certificate.location&amp;#39;&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;/path/to/danton-certificate.pem&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="s1"&gt;&amp;#39;ssl.key.location&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;/path/to/danton-key.pem&amp;#39;&lt;/span&gt;
+&lt;span class="p"&gt;})&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;and a producer as simple as: &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;producer&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;Producer&lt;/span&gt;&lt;span class="p"&gt;({&lt;/span&gt;
+    &lt;span class="s1"&gt;&amp;#39;bootstrap.servers&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="o"&gt;...&lt;/span&gt; &lt;span class="n"&gt;the&lt;/span&gt; &lt;span class="n"&gt;brokers&lt;/span&gt; &lt;span class="n"&gt;TLS&lt;/span&gt; &lt;span class="n"&gt;endpoint&lt;/span&gt; &lt;span class="n"&gt;here&lt;/span&gt;&lt;span class="o"&gt;...&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="s1"&gt;&amp;#39;security.protocol&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;ssl&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="s1"&gt;&amp;#39;ssl.certificate.location&amp;#39;&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;/path/to/danton-certificate.pem&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="s1"&gt;&amp;#39;ssl.key.location&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;/path/to/danton-key.pem&amp;#39;&lt;/span&gt;
+&lt;span class="p"&gt;})&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Since this python library is based on &lt;code&gt;librdkafka&lt;/code&gt;, you will find here &lt;a href="https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md"&gt;all configuration options&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Note that in order to validate the brokers' identity, the python client code above needs access to public certificates. By default, it's going to look them up in &lt;code&gt;/usr/lib/ssl/certs/&lt;/code&gt; and &lt;code&gt;/usr/lib/ssl/cacert.pem&lt;/code&gt;. See &lt;a href="https://github.com/confluentinc/confluent-kafka-python#ssl-certificates"&gt;Confluent Kafka python documentation&lt;/a&gt; for more details. For example, on my (Fedora) laptop, the public certificates are installed elsewhere, so I had to add the follow configuration: &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="s1"&gt;&amp;#39;ssl.ca.location&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h1&gt;Versions&lt;/h1&gt;
+&lt;p&gt;The code snippets above have been tested to work with the following versions (November 2019)&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Kafka 2.2.1 on MSK&lt;/li&gt;
+&lt;li&gt;Confluent Python Kafka 1.2.0&lt;/li&gt;
+&lt;li&gt;OpenSSL 1.1.1d&lt;/li&gt;
+&lt;li&gt;AWS CLI 1.16.261&lt;/li&gt;
+&lt;li&gt;Python 3.7.5&lt;/li&gt;
+&lt;/ul&gt;</content><category term="kafka"></category><category term="python"></category><category term="aws"></category><category term="security"></category></entry><entry><title>One-to-many Kafka Streams Ktable join</title><link href="https://svend.kelesia.com/one-to-many-kafka-streams-ktable-join.html" rel="alternate"></link><published>2019-04-30T00:00:00+02:00</published><updated>2019-04-30T00:00:00+02:00</updated><author><name>Svend Vanderveken</name></author><id>tag:svend.kelesia.com,2019-04-30:/one-to-many-kafka-streams-ktable-join.html</id><summary type="html">&lt;p&gt;Kafka Streams is a lightweight data processing library for Kafka. It's build on top of the Kafka consumer/producer APIs and provides higher level abstractions like streams and tables that can be joined and grouped with some flexibility. &lt;/p&gt;
 &lt;p&gt;One current limitation is the lack of non-key table join, i.e. impossibility to join 2 tables on something else than their primary key. &lt;/p&gt;
 &lt;p&gt;This post discusses approaches to work around this limitation. &lt;/p&gt;
 &lt;p&gt;TLDR: &lt;/p&gt;
@@ -131,41 +247,41 @@
 &lt;h3&gt;Broker basic parameters&lt;/h3&gt;
 &lt;p&gt;Let's start with a few comments on Kafka broker basic parameters, maybe located somewhere like &lt;code&gt;etc/kafka/server.properties&lt;/code&gt;&lt;/p&gt;
 &lt;p&gt;First off, each broker must know its enpoint as known by consumers and producers. This is because a Kafka cluster keeps a dynamic list of which broker serves which topic partition. Consumers and producers then obtain that routing information as part of the topic metadata and connect directly to the appropriate broker when exchanging data. &lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;listeners&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;PLAINTEXT&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="o"&gt;//&lt;/span&gt;&lt;span class="n"&gt;your&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="k"&gt;host&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="mi"&gt;9092&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;listeners=PLAINTEXT://your.host.name:9092
 &lt;/pre&gt;&lt;/div&gt;
 
 
 &lt;p&gt;Next, it's a good idea to specify a &lt;code&gt;chroot&lt;/code&gt; folder in the zookeeper connection string to keep the future flexibility of sharing it with other tools or even another Kafka cluster. Recall that several Kafka brokers are considered to be part of the same cluster if they share the same location on a zookeeper ensemble. Zookeeper is super sensible to load and access latency, so sharing it betweeen many frameworks is not always a good idea.&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nv"&gt;zookeeper&lt;/span&gt;.&lt;span class="k"&gt;connect&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="nv"&gt;zookeeper1&lt;/span&gt;:&lt;span class="mi"&gt;2181&lt;/span&gt;,&lt;span class="nv"&gt;zookeeper2&lt;/span&gt;:&lt;span class="mi"&gt;2181&lt;/span&gt;,&lt;span class="nv"&gt;zookeeper3&lt;/span&gt;:&lt;span class="mi"&gt;2181&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="nv"&gt;kafka&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;zookeeper.connect=zookeeper1:2181,zookeeper2:2181,zookeeper3:2181/kafka
 &lt;/pre&gt;&lt;/div&gt;
 
 
 &lt;p&gt;While we're on the subject of zookeeper, the two following can be handy. Note that setting a long timeout is not a magic solution to latency issues since it makes the detection and resolution of crashed brokers slower.&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;zookeeper&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="k"&gt;connection&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;timeout&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ms&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;6000&lt;/span&gt;
-&lt;span class="n"&gt;zookeeper&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="k"&gt;session&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;timeout&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ms&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;6000&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;zookeeper.connection.timeout.ms=6000
+zookeeper.session.timeout.ms=6000
 &lt;/pre&gt;&lt;/div&gt;
 
 
 &lt;p&gt;The broker log location can be specified as a comma-separated list of mount points. For higher throughput, one can specify several disks here.&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;log&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;dirs&lt;/span&gt;&lt;span class="o"&gt;=/&lt;/span&gt;&lt;span class="k"&gt;some&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="k"&gt;location&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="k"&gt;some&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;other&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="k"&gt;location&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="k"&gt;on&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;another&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;disk&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;log.dirs=/some/location,/some/other-location-on-another-disk
 &lt;/pre&gt;&lt;/div&gt;
 
 
 &lt;p&gt;The following parameter specifies the number of threads used during startup and  shut-down for cleaning up logs and getting to a stable state. Since they are only used at that moment, increasing it may speedup startup time (especially right after a major failure that requires lots' of cleanup) and should otherwise not impact the performance during the rest of the lifetime of the broker.&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;num&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;recovery&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;threads&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;per&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="k"&gt;data&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;dir&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;num.recovery.threads.per.data.dir=2
 &lt;/pre&gt;&lt;/div&gt;
 
 
 &lt;p&gt;In production, I would disable topic auto-creation, to make sure all topics are created with explictly chosen parameters. I would also tend to disable the deletion of topics: &lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;auto&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="k"&gt;create&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;topics&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;enable&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="k"&gt;false&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;auto.create.topics.enable=false
 
-&lt;span class="k"&gt;delete&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;topic&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;enable&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="k"&gt;false&lt;/span&gt;
+delete.topic.enable=false
 &lt;/pre&gt;&lt;/div&gt;
 
 
 &lt;p&gt;Default max message size is 1M. That setting can also be set per topic:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;#&lt;/span&gt; &lt;span class="n"&gt;this&lt;/span&gt; &lt;span class="k"&gt;is&lt;/span&gt; &lt;span class="n"&gt;overridable&lt;/span&gt; &lt;span class="k"&gt;at&lt;/span&gt; &lt;span class="n"&gt;topic&lt;/span&gt; &lt;span class="n"&gt;creation&lt;/span&gt; &lt;span class="n"&gt;time&lt;/span&gt; &lt;span class="k"&gt;with&lt;/span&gt; &lt;span class="c1"&gt;--config max.message.bytes&lt;/span&gt;
-&lt;span class="o"&gt;#&lt;/span&gt;&lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="k"&gt;max&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;bytes&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;1000000&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;# this is overridable at topic creation time with --config max.message.bytes
+#message.max.bytes=1000000
 &lt;/pre&gt;&lt;/div&gt;
 
 
@@ -189,22 +305,22 @@ log.segment.ms&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="m"&gt;123456&l
 
 
 &lt;p&gt;Consumer have their offsets committed in Kafka now (except if your client handles them explicitly in some other way), so they are also subject to retention. The default is 1 day. If you have a low traffic topic that might receive less than one message per day, your consumers offsets would not get updated and could be removed from Kafka. Setting &lt;code&gt;offsets.retention.minutes&lt;/code&gt; to a higher value should help in such case. &lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;# &lt;span class="nv"&gt;keep&lt;/span&gt; &lt;span class="nv"&gt;consumer&lt;/span&gt; &lt;span class="nv"&gt;offset&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="nv"&gt;two&lt;/span&gt; &lt;span class="nv"&gt;weeks&lt;/span&gt;
-&lt;span class="nv"&gt;offsets&lt;/span&gt;.&lt;span class="nv"&gt;retention&lt;/span&gt;.&lt;span class="nv"&gt;minutes&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;20160&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;# keep consumer offset for two weeks
+offsets.retention.minutes=20160
 &lt;/pre&gt;&lt;/div&gt;
 
 
 &lt;h3&gt;Broker data availability parameters&lt;/h3&gt;
 &lt;p&gt;If a topic is replicated, all read and write operations are performed on the leader partition and all other replicas are just slave copies. Such slave replica is said to be "out-of-sync" if it lags behind the latest records available in its leader. &lt;/p&gt;
 &lt;p&gt;In case the leader crashes at a moment when all live replicas are out-of-sync, Kafka will by default not allow such "unclean" replicas to become the new leader since data could be lost and/or consumers could be confused about offset fuzzy business. If you would like to favour availability over data consistency, you can choose to allow such "unclean leader election". Note that you can specify this per topic as well. &lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;#&lt;/span&gt; &lt;span class="n"&gt;this&lt;/span&gt; &lt;span class="k"&gt;is&lt;/span&gt; &lt;span class="n"&gt;overridable&lt;/span&gt; &lt;span class="k"&gt;at&lt;/span&gt; &lt;span class="n"&gt;topic&lt;/span&gt; &lt;span class="n"&gt;creation&lt;/span&gt; &lt;span class="n"&gt;time&lt;/span&gt; &lt;span class="k"&gt;with&lt;/span&gt; &lt;span class="c1"&gt;--config unclean.leader.election.enable&lt;/span&gt;
-&lt;span class="n"&gt;unclean&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;leader&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;election&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;enable&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="k"&gt;false&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;# this is overridable at topic creation time with --config unclean.leader.election.enable
+unclean.leader.election.enable=false
 &lt;/pre&gt;&lt;/div&gt;
 
 
 &lt;p&gt;The following parameter is a similar availabiliy vs consistency tradeoff: data producers have the possibility to request that "all" partition replicas confirm the reception of a record before considering the write operation as successful (cf &lt;code&gt;acks&lt;/code&gt; parameter below). In case some replicas are known to be out-of-sync, we know they are not going to provide such acknowledgment at the moment. The parameter below specifies the minimum number of replicas that must still be in sync such that we can consider that "all" replicas have confirmed the reception of a record.&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;#&lt;/span&gt; &lt;span class="n"&gt;this&lt;/span&gt; &lt;span class="k"&gt;is&lt;/span&gt; &lt;span class="n"&gt;overridable&lt;/span&gt; &lt;span class="k"&gt;at&lt;/span&gt; &lt;span class="n"&gt;topic&lt;/span&gt; &lt;span class="n"&gt;creation&lt;/span&gt; &lt;span class="n"&gt;time&lt;/span&gt; &lt;span class="k"&gt;with&lt;/span&gt; &lt;span class="c1"&gt;--config min.insync.replicas&lt;/span&gt;
-&lt;span class="k"&gt;min&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;insync&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;replicas&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;# this is overridable at topic creation time with --config min.insync.replicas
+min.insync.replicas=2
 &lt;/pre&gt;&lt;/div&gt;
 
 
@@ -213,26 +329,26 @@ log.segment.ms&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="m"&gt;123456&l
 &lt;p&gt;One key piece of information to keep in mind is that configuring producers and consumers makes sense when we code directly against their API, &lt;strong&gt;as well when we want to configure Kafka Connect, Kafka Stream, Flink Kafka connector, Spark Kafka connector and pretty much any java or scala component that relies on them&lt;/strong&gt;, simply because, well, all their features still matter once they're wrapped in such tools.  &lt;/p&gt;
 &lt;h4&gt;Basic parameters&lt;/h4&gt;
 &lt;p&gt;&lt;code&gt;bootstrap.servers&lt;/code&gt; should specify a couple of kafka brokers. If at least one of them is still valid at the moment the connection happens, the client will then rely on Kafka service discovery to figure out all the others. &lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;bootstrap&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;servers&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="k"&gt;some&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;broker&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="mi"&gt;9092&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="k"&gt;some&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;other&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;broker&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="mi"&gt;9092&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;bootstrap.servers=some-broker:9092.some-other-broker:9092
 &lt;/pre&gt;&lt;/div&gt;
 
 
 &lt;p&gt;Pretty much all a broker knows about a record payload is that it's a key/value pair made of bytes. Serializers are used by the producer to convert java instances to such byte arrays. One possible choice here is to rely on &lt;a href="https://github.com/confluentinc/schema-registry/blob/3.3.1-post/avro-serializer/src/main/java/io/confluent/kafka/serializers/KafkaAvroSerializer.java"&gt;Confluent's avro / schema registry serializer&lt;/a&gt; to obtain avro records with a schema properly declared and versioned in the Conluent schema registry.&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;value&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;serializer&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="k"&gt;some&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="k"&gt;class&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;value.serializer=some.class
 
-&lt;span class="k"&gt;key&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;serializer&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="k"&gt;some&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="k"&gt;class&lt;/span&gt;
+key.serializer=some.class
 &lt;/pre&gt;&lt;/div&gt;
 
 
 &lt;p&gt;Producers also optionally handle data compression for us. For maximum throughput, there is a tradeoff to be experimentally found between message size and cpu time spent (de)compressing it.&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;#&lt;/span&gt; &lt;span class="n"&gt;compression&lt;/span&gt; &lt;span class="n"&gt;codec&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt; 
-&lt;span class="o"&gt;#&lt;/span&gt; &lt;span class="ss"&gt;&amp;quot;none&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="ss"&gt;&amp;quot;snappy&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="ss"&gt;&amp;quot;lz4&amp;quot;&lt;/span&gt; &lt;span class="k"&gt;or&lt;/span&gt; &lt;span class="ss"&gt;&amp;quot;gzip&amp;quot;&lt;/span&gt;
-&lt;span class="n"&gt;compression&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="k"&gt;type&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;lz4&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;# compression codec. 
+# &amp;quot;none&amp;quot;, &amp;quot;snappy&amp;quot;, &amp;quot;lz4&amp;quot; or &amp;quot;gzip&amp;quot;
+compression.type=lz4
 &lt;/pre&gt;&lt;/div&gt;
 
 
 &lt;p&gt;The following controls the maximum amount of time the client will wait for the response of a request.&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;request&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;timeout&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ms&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;30000&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;request.timeout.ms=30000
 &lt;/pre&gt;&lt;/div&gt;
 
 
@@ -241,96 +357,96 @@ log.segment.ms&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="m"&gt;123456&l
 &lt;p&gt;Note that as the producer keep on retrying while potentially also trying to send new traffic, pending messages can quickly occupy some space, so make sure &lt;code&gt;buffer.memory&lt;/code&gt; is set properly. Finally, once the memory buffer is full (or if topic metadata are impossible to obtain at the moment), the producer will block during &lt;code&gt;max.block.ms&lt;/code&gt; before blowing up. &lt;/p&gt;
 &lt;p&gt;I guess this is Kafka's take on back-pressure. &lt;/p&gt;
 &lt;p&gt;Really, if we care about data consistency, and assuming all upstreams components are behaving accordingly, blocking might be the best thing to do here. Well, blowing up might also be the way. Each case should be designed. &lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;#&lt;/span&gt; &lt;span class="n"&gt;this&lt;/span&gt; &lt;span class="k"&gt;default&lt;/span&gt; &lt;span class="k"&gt;to&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;unless&lt;/span&gt; &lt;span class="n"&gt;you&lt;/span&gt; &lt;span class="n"&gt;enabled&lt;/span&gt; &lt;span class="n"&gt;idempotence&lt;/span&gt;
-&lt;span class="n"&gt;retries&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;2147483647&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;# this default to 0, unless you enabled idempotence
+retries=2147483647
 
-&lt;span class="n"&gt;retry&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;backoff&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ms&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;100&lt;/span&gt;
+retry.backoff.ms=100
 
-&lt;span class="n"&gt;buffer&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;memory&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;33554432&lt;/span&gt;
+buffer.memory=33554432
 
-&lt;span class="k"&gt;max&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;block&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ms&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;60000&lt;/span&gt;
+max.block.ms=60000
 &lt;/pre&gt;&lt;/div&gt;
 
 
 &lt;p&gt;As mentioned above on the section &lt;code&gt;min.insync.replica&lt;/code&gt;, producer can specify the amount of required acknowledgments for a write to be considered successful. &lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;#&lt;/span&gt; &lt;span class="n"&gt;this&lt;/span&gt; &lt;span class="k"&gt;defaults&lt;/span&gt; &lt;span class="k"&gt;to&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;unless&lt;/span&gt; &lt;span class="n"&gt;you&lt;/span&gt; &lt;span class="n"&gt;enabled&lt;/span&gt; &lt;span class="n"&gt;idempotence&lt;/span&gt;
-&lt;span class="n"&gt;acks&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="k"&gt;all&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;# this defaults to 1, unless you enabled idempotence
+acks=all
 &lt;/pre&gt;&lt;/div&gt;
 
 
 &lt;p&gt;Idempotent producers is one of the awesome feature that Kafka folks gifted to the world in version 0.11. That is a long subject, though in a nutshell it guarantees that successfully written records are written exactly once to the brokers. Previously, due to some corner cases in the retry mechanism, some message could have ended-up being duplicated. &lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;#&lt;/span&gt; &lt;span class="n"&gt;Idempotent&lt;/span&gt; &lt;span class="n"&gt;retries&lt;/span&gt; &lt;span class="n"&gt;features&lt;/span&gt; &lt;span class="k"&gt;of&lt;/span&gt; &lt;span class="n"&gt;Kafka&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;introduced&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="mi"&gt;11&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; 
-&lt;span class="o"&gt;#&lt;/span&gt; &lt;span class="n"&gt;Part&lt;/span&gt; &lt;span class="k"&gt;of&lt;/span&gt; &lt;span class="n"&gt;components&lt;/span&gt; &lt;span class="n"&gt;enabing&lt;/span&gt; &lt;span class="n"&gt;Kafka&lt;/span&gt; &lt;span class="n"&gt;Streams&lt;/span&gt; &lt;span class="n"&gt;exactly&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;once&lt;/span&gt; &lt;span class="n"&gt;processing&lt;/span&gt; &lt;span class="n"&gt;semantics&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;
-&lt;span class="n"&gt;enable&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;idempotence&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="k"&gt;false&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;# Idempotent retries features of Kafka, introduced in 0.11, 
+# Part of components enabing Kafka Streams exactly-once processing semantics.
+enable.idempotence=false
 &lt;/pre&gt;&lt;/div&gt;
 
 
 &lt;h4&gt;Output record batching&lt;/h4&gt;
 &lt;p&gt;Kafka producers also automatically batch our records together and send them asynchronously!&lt;/p&gt;
 &lt;p&gt;In case enough data is available when the producer sends data, it will pack them per batch of &lt;code&gt;batch.size&lt;/code&gt; bytes. If less data is available it just sends what it has without waiting, unless &lt;code&gt;linger.ms&lt;/code&gt; is set to a positive value, in which case it waits a bit to get a chance to pack a few more: &lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;batch&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="k"&gt;size&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;16384&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;batch.size=16384
 
-&lt;span class="n"&gt;linger&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ms&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;
+linger.ms=0
 &lt;/pre&gt;&lt;/div&gt;
 
 
 &lt;p&gt;By default, the producer will wait for a batch to be acknowledged, as specified by &lt;code&gt;acks&lt;/code&gt; above, before sending the next batch. For potentially faster throughput, we set the following parameter to some value greater than one to specify the maximum amount of such un-acknowledged batches that we allow.&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;Gotcha&lt;/strong&gt;: setting this to anything else than 1 destroys the per-topic ordering guarantee of Kafka, simply because some in-flight batches might fail and be retried, while others might go through, in any order.&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;# &lt;span class="k"&gt;If&lt;/span&gt; &lt;span class="nv"&gt;set&lt;/span&gt; &lt;span class="nv"&gt;enable&lt;/span&gt;.&lt;span class="nv"&gt;idempotence&lt;/span&gt; &lt;span class="nv"&gt;to&lt;/span&gt; &lt;span class="nv"&gt;true&lt;/span&gt;, &lt;span class="nv"&gt;it&lt;/span&gt; &lt;span class="nv"&gt;may&lt;/span&gt; &lt;span class="nv"&gt;not&lt;/span&gt; &lt;span class="nv"&gt;be&lt;/span&gt; &lt;span class="nv"&gt;greater&lt;/span&gt; &lt;span class="nv"&gt;than&lt;/span&gt; &lt;span class="mi"&gt;5&lt;/span&gt;
-#&lt;span class="nv"&gt;max&lt;/span&gt;.&lt;span class="nv"&gt;in&lt;/span&gt;.&lt;span class="nv"&gt;flight&lt;/span&gt;.&lt;span class="nv"&gt;requests&lt;/span&gt;.&lt;span class="nv"&gt;per&lt;/span&gt;.&lt;span class="nv"&gt;connection&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;# If set enable.idempotence to true, it may not be greater than 5
+#max.in.flight.requests.per.connection=1
 &lt;/pre&gt;&lt;/div&gt;
 
 
 &lt;h3&gt;Kafka consummers&lt;/h3&gt;
 &lt;h4&gt;Basic parameters&lt;/h4&gt;
 &lt;p&gt;Kafka consumer group share the read load when reading from topics. &lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;group&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;id&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="ss"&gt;&amp;quot;my client&amp;quot;&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;group.id=&amp;quot;my client&amp;quot;
 &lt;/pre&gt;&lt;/div&gt;
 
 
 &lt;p&gt;See producer discussion regarding broker endpoint and serialisers&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;bootstrap&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;servers&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="k"&gt;some&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;broker&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="mi"&gt;9092&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="k"&gt;some&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;other&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;broker&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="mi"&gt;9092&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;bootstrap.servers=some-broker:9092.some-other-broker:9092
 
-&lt;span class="n"&gt;value&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;deserializer&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="k"&gt;some&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="k"&gt;class&lt;/span&gt;
+value.deserializer=some.class
 
-&lt;span class="k"&gt;key&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;deserializer&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="k"&gt;some&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="k"&gt;class&lt;/span&gt;
+key.deserializer=some.class
 &lt;/pre&gt;&lt;/div&gt;
 
 
 &lt;p&gt;&lt;code&gt;fetch.min.bytes=1&lt;/code&gt; means the consumer will start reading as early as at least one message of at least one byte is available. Forcing higher values here might lead to reading by larger chunks and relying on less network round trips. &lt;/p&gt;
 &lt;p&gt;In a similar fashion, &lt;code&gt;max.poll.records&lt;/code&gt; specifies, well, the maximum number of message to fetch each time. &lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;fetch&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="k"&gt;min&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;bytes&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;fetch.min.bytes=1
 
-&lt;span class="k"&gt;max&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;poll&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;records&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;500&lt;/span&gt;
+max.poll.records=500
 &lt;/pre&gt;&lt;/div&gt;
 
 
 &lt;p&gt;The following specifies where to start reading a topic when a consumer appears and does not have a previous offset to start from. This is the typical situation that happens when a new consumer group is created, although it can also be relevant if that offset existed in the past but disappeared due to the &lt;code&gt;offsets.retention.minutes&lt;/code&gt; parameter mentioned above. &lt;code&gt;latest&lt;/code&gt; will make the consumer tail the log while &lt;code&gt;earliest&lt;/code&gt; will (re)-start from the beginning.&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;auto&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="k"&gt;offset&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="k"&gt;reset&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;earliest&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;auto.offset.reset=earliest
 &lt;/pre&gt;&lt;/div&gt;
 
 
 &lt;p&gt;Consumer offsets get committed by default to a Kafka topics. That is a reasonnable default, though sometimes you might prefer to handle them yourself. For example this &lt;a href="http://blog.cloudera.com/blog/2017/06/offset-management-for-apache-kafka-with-apache-spark-streaming/"&gt;blog post by Guru Medasani shows how to commit offsets with the processed data in Hbase&lt;/a&gt;.&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;enable&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;auto&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="k"&gt;commit&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="k"&gt;true&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;enable.auto.commit=true
 &lt;/pre&gt;&lt;/div&gt;
 
 
 &lt;h4&gt;Group robustness and record delivery guarantees&lt;/h4&gt;
 &lt;p&gt;A consumer instance needs to be considered alive to remain part of a consumer group. If it fails to emit hearbeats for more than &lt;code&gt;session.timeout.ms&lt;/code&gt;, it gets kicked out and a group rebalance happens. &lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;heartbeat&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nb"&gt;interval&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ms&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;3000&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;heartbeat.interval.ms=3000
 
-&lt;span class="k"&gt;session&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;timeout&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ms&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;10000&lt;/span&gt;
+session.timeout.ms=10000
 &lt;/pre&gt;&lt;/div&gt;
 
 
 &lt;p&gt;The Kafka consumer refreshes its knowledge of the metadata describing a topic at fixed interval, as defined below. Little known fact: if your consomer start consuming from a topic &lt;em&gt;before you create it&lt;/em&gt; (it's not going to consumme much, is it?), maybe because some consuming client got deployed a bit too early, it will block, then retry discovering the location of the relevant partition after that period as well. &lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;metadata&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="k"&gt;max&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;age&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ms&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;300000&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;metadata.max.age.ms=300000
 &lt;/pre&gt;&lt;/div&gt;
 
 
 &lt;p&gt;Kafka 0.11 introduced so-called &lt;em&gt;transactions&lt;/em&gt;. Essentially, they try to mimic the &lt;em&gt;read committed&lt;/em&gt; isolation feature of ACID transactions by allowing a producer to mark a set of written records, typically accross several topics, as part of the same atomic write operation. Kafka consumer will ignore that feature by default, unless they are configured with &lt;code&gt;isolation.level=read.committed&lt;/code&gt;, in which case any record that is not part of a committed transaction gets discarded. &lt;/p&gt;
 &lt;p&gt;Note that this does &lt;strong&gt;not&lt;/strong&gt; achieve atomic read: this is an all-or-nothing &lt;em&gt;write&lt;/em&gt; operation: from the read side, there is no way to have an all-or-nothing mechanism. &lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;isolation&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="k"&gt;level&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;read_uncommitted&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;isolation.level=read_uncommitted
 &lt;/pre&gt;&lt;/div&gt;
 
 
