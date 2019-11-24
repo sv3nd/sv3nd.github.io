@@ -102,7 +102,7 @@ kafka-acls &lt;span class="se"&gt;\&lt;/span&gt;
 
 
 &lt;p&gt;Since this python library is based on &lt;code&gt;librdkafka&lt;/code&gt;, you will find here &lt;a href="https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md"&gt;all configuration options&lt;/a&gt;.&lt;/p&gt;
-&lt;p&gt;Note that in order to validate the brokers' identity, the python client code above needs access to public certificates. By default, it's going to look them up in &lt;code&gt;/usr/lib/ssl/certs/&lt;/code&gt; and &lt;code&gt;/usr/lib/ssl/cacert.pem&lt;/code&gt;. See &lt;a href="https://github.com/confluentinc/confluent-kafka-python#ssl-certificates"&gt;Confluent Kafka python documentation&lt;/a&gt; for more details. For example, on my (Fedora) laptop, the public certificates are installed elsewhere, so I had to add the follow configuration: &lt;/p&gt;
+&lt;p&gt;Note that in order to validate the brokers' identity, the python client code above needs access to public certificates. By default, it's going to look them up in &lt;code&gt;/usr/lib/ssl/certs/&lt;/code&gt; and &lt;code&gt;/usr/lib/ssl/cacert.pem&lt;/code&gt;. See &lt;a href="https://github.com/confluentinc/confluent-kafka-python#ssl-certificates"&gt;Confluent Kafka python documentation&lt;/a&gt; for more details. For example, on my (Fedora) laptop, the public certificates are installed elsewhere, so I had to add the following configuration: &lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="s1"&gt;&amp;#39;ssl.ca.location&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
 &lt;/pre&gt;&lt;/div&gt;
 

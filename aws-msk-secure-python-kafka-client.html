@@ -169,7 +169,7 @@ kafka-acls <span class="se">\</span>
 
 
 <p>Since this python library is based on <code>librdkafka</code>, you will find here <a href="https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md">all configuration options</a>.</p>
-<p>Note that in order to validate the brokers' identity, the python client code above needs access to public certificates. By default, it's going to look them up in <code>/usr/lib/ssl/certs/</code> and <code>/usr/lib/ssl/cacert.pem</code>. See <a href="https://github.com/confluentinc/confluent-kafka-python#ssl-certificates">Confluent Kafka python documentation</a> for more details. For example, on my (Fedora) laptop, the public certificates are installed elsewhere, so I had to add the follow configuration: </p>
+<p>Note that in order to validate the brokers' identity, the python client code above needs access to public certificates. By default, it's going to look them up in <code>/usr/lib/ssl/certs/</code> and <code>/usr/lib/ssl/cacert.pem</code>. See <a href="https://github.com/confluentinc/confluent-kafka-python#ssl-certificates">Confluent Kafka python documentation</a> for more details. For example, on my (Fedora) laptop, the public certificates are installed elsewhere, so I had to add the following configuration: </p>
 <div class="highlight"><pre><span></span>    <span class="s1">&#39;ssl.ca.location&#39;</span><span class="p">:</span> <span class="s1">&#39;/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem&#39;</span><span class="p">,</span>
 </pre></div>
 
