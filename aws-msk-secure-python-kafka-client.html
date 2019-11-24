@@ -83,7 +83,7 @@
 <p>When connecting to the TLS endpoint, the principal of the application will be the one of its certificate, whereas when connecting over PLAINTEXT, its principal will be <code>ANONYMOUS</code>. </p>
 <h2>Protecting the ACLs</h2>
 <p>The current version of Kafka stores ACLs in Zookeeper, which should therefore be carefully secured well, as <a href="https://docs.aws.amazon.com/msk/latest/developerguide/security_iam_service-with-iam.html">described on the AWS documentation</a>. </p>
-<p>ACL can also be edited directly via the Kafka brokers, using the <a href="https://kafka.apache.org/24/javadoc/index.html?org/apache/kafka/clients/admin/AdminClient.html">Kafka admin api</a>, so you also want to protect this access as well, by <a href="https://docs.confluent.io/current/kafka/authorization.html#creating-non-super-user-acl-administrators">restricting access to "ALTER --cluster"</a> as appropriate.</p>
+<p>ACL can also be edited directly via the Kafka brokers, using the <a href="https://kafka.apache.org/24/javadoc/index.html?org/apache/kafka/clients/admin/AdminClient.html">Kafka admin api</a>, so you want to protect this access as well, by <a href="https://docs.confluent.io/current/kafka/authorization.html#creating-non-super-user-acl-administrators">restricting access to "ALTER --cluster"</a> as appropriate.</p>
 <h1>ACL</h1>
 <p>We're going to write a python application that reads from <code>topic-A</code> and writes to <code>topic-B</code>. This application will use <code>The-Great-Danton</code> as principal and <code>Danton</code> as Kafka consumer group id. </p>
 <p>Let's create the ACLs appropriate to this scenario: </p>
