@@ -26,7 +26,7 @@ LINKS = ()
 SOCIAL = (
          ("github", 'https://github.com/sv3ndk'),
      	 ("twitter", 'https://twitter.com/sv3ndk'),
-     	 ("linkedin", 'https://be.linkedin.com/in/vanderveken'),
+     	 ("linkedin", 'https://www.linkedin.com/in/sv3ndk'),
      	 ("stack-overflow", 'https://stackoverflow.com/users/3318335/svend'),
          )
 
