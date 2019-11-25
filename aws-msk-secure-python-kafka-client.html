@@ -74,6 +74,7 @@
 <h1>Cloud side setup</h1>
 <h2>AWS ACM PCA</h2>
 <p>The TLS certificate that the client will use as proof of identity (see below) must be trusted by MSK. At present, the only way (that I know of) to achieve this is to create a certificate authority on AWS, link it to our MSK cluster and then use it to create certificates. </p>
+<p>Note well that AWS PCA is not a cheap service (like 400 EUR/month at the time of writing this). Also, since PCA will be issueing proofs of identity, you need to carefully restrict access to it.</p>
 <p>For more information about AWS PCA, head to <a href="https://docs.aws.amazon.com/acm-pca/latest/userguide/PcaWelcome.html">AWS PCA documentation</a></p>
 <h2>Enabling TLS on MSK</h2>
 <p>When configuring the MSK cluster, make sure you enable the TLS endpoint. It is possible to keep both the PLAINTEXT and the TLS endpoint open, although in production disabling PLAINTEXT is of course recommended. </p>
@@ -174,6 +175,11 @@ kafka-acls <span class="se">\</span>
 </pre></div>
 
 
+<h1>What have we got ?</h1>
+<p>In this post, I have illustrated a method to achieve TLS encryption and authentication between a python client and a Kafka cluster.</p>
+<p>There is much more to security than just this setup of course. Among other things, the access to PCA as well as to the ACLs should be carefully protected. Also, you should probably have a good look at certificate validity period and revocation.</p>
+<p>Note that end-user identity is nowhere involved here: the principal used during authentication is associated to the application as a whole. This sounds appropriate enough since it’s hard to think of a use case where end user identity would need to be propagated up to the brokers. If you really need this though, SASL is probably the way to go, although it’s not supported by MSK at this point. SASL can also be used for other ticket-based scenarios.</p>
+<p>Finally, even if the approach above is illustrated in Python, any other library based on librdkafka should work just the same way. That means we can have applications written in tons of languages all interacting through Kafka and using the same approach for security. That’s pretty neat :)</p>
 <h1>Versions</h1>
 <p>The code snippets above have been tested to work with the following versions (November 2019)</p>
 <ul>

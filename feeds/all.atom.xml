@@ -7,6 +7,7 @@
 &lt;h1&gt;Cloud side setup&lt;/h1&gt;
 &lt;h2&gt;AWS ACM PCA&lt;/h2&gt;
 &lt;p&gt;The TLS certificate that the client will use as proof of identity (see below) must be trusted by MSK. At present, the only way (that I know of) to achieve this is to create a certificate authority on AWS, link it to our MSK cluster and then use it to create certificates. &lt;/p&gt;
+&lt;p&gt;Note well that AWS PCA is not a cheap service (like 400 EUR/month at the time of writing this). Also, since PCA will be issueing proofs of identity, you need to carefully restrict access to it.&lt;/p&gt;
 &lt;p&gt;For more information about AWS PCA, head to &lt;a href="https://docs.aws.amazon.com/acm-pca/latest/userguide/PcaWelcome.html"&gt;AWS PCA documentation&lt;/a&gt;&lt;/p&gt;
 &lt;h2&gt;Enabling TLS on MSK&lt;/h2&gt;
 &lt;p&gt;When configuring the MSK cluster, make sure you enable the TLS endpoint. It is possible to keep both the PLAINTEXT and the TLS endpoint open, although in production disabling PLAINTEXT is of course recommended. &lt;/p&gt;
@@ -107,6 +108,11 @@ kafka-acls &lt;span class="se"&gt;\&lt;/span&gt;
 &lt;/pre&gt;&lt;/div&gt;
 
 
+&lt;h1&gt;What have we got ?&lt;/h1&gt;
+&lt;p&gt;In this post, I have illustrated a method to achieve TLS encryption and authentication between a python client and a Kafka cluster.&lt;/p&gt;
+&lt;p&gt;There is much more to security than just this setup of course. Among other things, the access to PCA as well as to the ACLs should be carefully protected. Also, you should probably have a good look at certificate validity period and revocation.&lt;/p&gt;
+&lt;p&gt;Note that end-user identity is nowhere involved here: the principal used during authentication is associated to the application as a whole. This sounds appropriate enough since it’s hard to think of a use case where end user identity would need to be propagated up to the brokers. If you really need this though, SASL is probably the way to go, although it’s not supported by MSK at this point. SASL can also be used for other ticket-based scenarios.&lt;/p&gt;
+&lt;p&gt;Finally, even if the approach above is illustrated in Python, any other library based on librdkafka should work just the same way. That means we can have applications written in tons of languages all interacting through Kafka and using the same approach for security. That’s pretty neat :)&lt;/p&gt;
 &lt;h1&gt;Versions&lt;/h1&gt;
 &lt;p&gt;The code snippets above have been tested to work with the following versions (November 2019)&lt;/p&gt;
 &lt;ul&gt;
