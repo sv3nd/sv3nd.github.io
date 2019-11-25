@@ -49,7 +49,7 @@ PLUGINS = [ 'ipynb.markup', 'pelican_alias']
 IGNORE_FILES = [".ipynb_checkpoints"]
 
 BIO = "I am a freelance data engineer, I currently focus on streaming architectures, Kafka, Scala, Python, SQL,..."
-PROFILE_IMAGE = "blog/svend.jpg"
+PROFILE_IMAGE = "blog/svend-profile.jpg"
 
 STATIC_PATHS = ['images', 'extra/CNAME']
 EXTRA_PATH_METADATA = {'extra/CNAME': {'path': 'CNAME'},}
