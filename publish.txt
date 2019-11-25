@@ -2,12 +2,17 @@ following instructions from: https://www.dataquest.io/blog/how-to-setup-a-data-s
 all the below is done on the dev branch
 also, this requires https://github.com/davisp/ghp-import for merging the output to the master branch
 
+make sure to be on the dev branch
+
+source ~/.virtualenvs/sv3ndk-blog/bin/activate
+
+
 preview:
  pelican content
  cd output
- python -m SimpleHTTPServer
+ python -m http.server
 
 publish:
  pelican content -s publishconf.py
- ghp-import output -b master
+ ~/.virtualenvs/sv3ndk-blog/bin/ghp-import output -b master
  git push origin master
