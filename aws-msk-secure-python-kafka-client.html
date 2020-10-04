@@ -67,7 +67,7 @@
 </div>		<div class="content container">
 <div class="post">
 	<h1 class="post-title">AWS MSK secure Python Kafka client</h1>
-	<span class="post-date">So 24 November 2019</span>
+	<span class="post-date">Sun 24 November 2019</span>
 	<p>This blog describes how to write a secured python client for AWS MSK (i.e. Kafka) using TLS for authentication. </p>
 <p>Kafka offers various security options, including traffic encryption with TLS, client authentication with either TLS or SASL, and ACL for authorization. AWS MSK, the Kafka offering of AWS, currently only supports TLS as authentication mechanism. MSK is also <a href="https://docs.aws.amazon.com/msk/latest/developerguide/security_iam_service-with-iam.html">integrated with AWS IAM</a>, although not for controlling access at topic granularity but rather for cluster administration tasks (e.g. <em>describeCluster</em>,...)</p>
 <p>In case you are interested in writting a java or scala client instead, have a look at <a href="https://docs.aws.amazon.com/msk/latest/developerguide/msk-authentication.html">the official MSK documentation</a>, which has served as the basis for this post. </p>

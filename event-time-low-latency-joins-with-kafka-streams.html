@@ -67,7 +67,7 @@
 </div>		<div class="content container">
 <div class="post">
 	<h1 class="post-title">Event time low-latency joins with Kafka Streams</h1>
-	<span class="post-date">So 17 September 2017</span>
+	<span class="post-date">Sun 17 September 2017</span>
 	<p>This post attempts to illustrate the difficulty of performing an event-time join between two time series with a stream processing framework. It also describes one solution based on Kafka Streams 0.11.0.0.</p>
 <p>An event-time join is an attempt to join two time series while taking into account the timestamps. More precisely, for each event from the first time series, it looks up the latest event from the other that occurred before it. This blog post is based on Kafka Stream although I found the original idea in this <a href="http://training.data-artisans.com/exercises/eventTimeJoin.html">Flink tutorial</a>, where the idea of event-time join is very well explained. </p>
 <p>Event-time join are often required in practise. For example, given a stream of transactions and another one of customer profile updates, we might want to associate each transaction to the corresponding customer profile as it was known at the moment of the transaction. Or given a stream of traffic information and another one of weather updates, we might want to associate each traffic event with the latest weather that was known for that location at that point in time. </p>

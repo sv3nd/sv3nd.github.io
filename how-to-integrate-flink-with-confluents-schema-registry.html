@@ -67,7 +67,7 @@
 </div>		<div class="content container">
 <div class="post">
 	<h1 class="post-title">How to integrate Flink with Confluent's schema registry</h1>
-	<span class="post-date">Fr 30 Juni 2017</span>
+	<span class="post-date">Fri 30 June 2017</span>
 	<p>This post illustrates how to use Confluent's Avro serializer in order to let a Flink program consume and produce avro messages through Kafka while keeping track of the Avro Schemas in Confluent's schema registry. This can be interresting if the messages are pumped into or out of Kafka with Kafka Connect, Kafka Streams, or just with anything else also integrated with the schema registry.</p>
 <p><strong>Warning</strong>: As of now (Aug 2017), it turns out using Confluent's Avro deserializer as explained below is not ideal when deploying to FLink in standalone mode, because of the way caching is impemented on Avro level. More information in <a href="https://github.com/confluentinc/schema-registry/pull/509#issuecomment-323143951">this Confluent PR</a> as well as in <a href="https://issues.apache.org/jira/browse/FLINK-5633">this FLink JIRA</a>. Hopefully a workaround will be found soon.</p>
 <p>This has been written with the following dependencies in mind: </p>
