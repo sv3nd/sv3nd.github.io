@@ -70,11 +70,11 @@
 				<h1 class="post-title" href="https://svend.kelesia.com/aws-msk-secure-python-kafka-client.html#aws-msk-secure-python-kafka-client">
 					<a href="https://svend.kelesia.com/aws-msk-secure-python-kafka-client.html#aws-msk-secure-python-kafka-client">AWS MSK secure Python Kafka client</a>
 				</h1>
-				<span class="post-date">Sun 24 November 2019</span>
+				<span class="post-date">So 24 November 2019</span>
 				<p>
 					<p>This blog describes how to write a secured python client for AWS MSK (i.e. Kafka) using TLS for authentication. </p>
 <p>Kafka offers various security options, including traffic encryption with TLS, client authentication with either TLS or SASL, and ACL for authorization. AWS MSK, the Kafka offering of AWS, currently only supports TLS as authentication mechanism. MSK is also <a href="https://docs.aws.amazon.com/msk/latest/developerguide/security_iam_service-with-iam.html">integrated with AWS IAM</a>, although not for controlling access at topic granularity but rather for cluster administration tasks (e.g. <em>describeCluster</em>,...)</p>
-<p>In case you are interested in writting a java or scala client instead, have a look at <a href="https://docs.aws.amazon.com/msk/latest/developerguide/msk-authentication.html">the official MSK documentation …</a></p>
+<p>In case you are interested in writting a java or scala client instead, have a look at <a href="https://docs.aws.amazon.com/msk/latest/developerguide/msk-authentication.html">the official MSK documentation ...</a></p>
 				</p>
 				<a class="read-more" href="aws-msk-secure-python-kafka-client.html">Continue reading »</a>
 			</div>
@@ -82,7 +82,7 @@
 				<h1 class="post-title" href="https://svend.kelesia.com/one-to-many-kafka-streams-ktable-join.html#one-to-many-kafka-streams-ktable-join">
 					<a href="https://svend.kelesia.com/one-to-many-kafka-streams-ktable-join.html#one-to-many-kafka-streams-ktable-join">One-to-many Kafka Streams Ktable join</a>
 				</h1>
-				<span class="post-date">Tue 30 April 2019</span>
+				<span class="post-date">Di 30 April 2019</span>
 				<p>
 					<p>Kafka Streams is a lightweight data processing library for Kafka. It's build on top of the Kafka consumer/producer APIs and provides higher level abstractions like streams and tables that can be joined and grouped with some flexibility. </p>
 <p>One current limitation is the lack of non-key table join, i.e. impossibility to join 2 tables on something else than their primary key. </p>
@@ -92,21 +92,33 @@
 <li>For now, use composite keys in a state store and query it with a range scan. </li>
 <li>Alternatively, wait for (or contribute to) KIP-213.</li>
 </ul>
-<p>An example implementation of my …</p>
+<p>An example implementation of ...</p>
 				</p>
 				<a class="read-more" href="one-to-many-kafka-streams-ktable-join.html">Continue reading »</a>
+			</div>
+			<div class="post">
+				<h1 class="post-title" href="https://svend.kelesia.com/generating-realistic-random-datasets-with-python.html#generating-realistic-random-datasets-with-python">
+					<a href="https://svend.kelesia.com/generating-realistic-random-datasets-with-python.html#generating-realistic-random-datasets-with-python">Generating Realistic Random Datasets with Python</a>
+				</h1>
+				<span class="post-date">Mi 14 Februar 2018</span>
+				<p>
+					<p>As a data engineer, after you have written your new awesome data processing application, you think it is time to start testing end-to-end and you therefore need some input data.</p>
+<p>As a data scientist, you can benefit from data generation since it allows you to experiment with various ways of exploring datasets, algorithms, data visualization techniques or to validate assumptions about the behaviour of some method against many different dataset of your choosing.</p>
+<p>In both cases, a tempting option is just to use real data. One small problem though is that production data is typically hard to obtain, even partially ...</p>
+				</p>
+				<a class="read-more" href="generating-realistic-random-datasets-with-python.html">Continue reading »</a>
 			</div>
 			<div class="post">
 				<h1 class="post-title" href="https://svend.kelesia.com/a-commented-kafka-configuration.html#a-commented-kafka-configuration">
 					<a href="https://svend.kelesia.com/a-commented-kafka-configuration.html#a-commented-kafka-configuration">A commented Kafka configuration</a>
 				</h1>
-				<span class="post-date">Tue 19 December 2017</span>
+				<span class="post-date">Di 19 Dezember 2017</span>
 				<p>
 					<p>Diving into Kafka configuration is a beautiful journey into its features. </p>
 <p>As a preparation for a production deployment of Kafka 0.11, I gathered a set of comments on what I think are some interesting parameters. All this amazing wisdom is mostly extracted from the few resources mentioned at the end of this post. </p>
 <h3>A grain of salt...</h3>
 <p>This is all for information only, I honestly think most of the points below are relevant and correct, though mistakes and omissions are likely present here and there. </p>
-<p>You should not apply any of this blindly to your production environment and hope …</p>
+<p>You should not apply any of this blindly to your production environment and hope ...</p>
 				</p>
 				<a class="read-more" href="a-commented-kafka-configuration.html">Continue reading »</a>
 			</div>
@@ -114,23 +126,12 @@
 				<h1 class="post-title" href="https://svend.kelesia.com/event-time-low-latency-joins-with-kafka-streams.html#event-time-low-latency-joins-with-kafka-streams">
 					<a href="https://svend.kelesia.com/event-time-low-latency-joins-with-kafka-streams.html#event-time-low-latency-joins-with-kafka-streams">Event time low-latency joins with Kafka Streams</a>
 				</h1>
-				<span class="post-date">Sun 17 September 2017</span>
+				<span class="post-date">So 17 September 2017</span>
 				<p>
 					<p>This post attempts to illustrate the difficulty of performing an event-time join between two time series with a stream processing framework. It also describes one solution based on Kafka Streams 0.11.0.0.</p>
-<p>An event-time join is an attempt to join two time series while taking into account the timestamps. More precisely, for each event from the first time series, it looks up the latest event from the other that occurred before it. This blog post is based on Kafka Stream although I found the original idea in this <a href="http://training.data-artisans.com/exercises/eventTimeJoin.html">Flink tutorial</a>, where the idea of event-time join is very …</p>
+<p>An event-time join is an attempt to join two time series while taking into account the timestamps. More precisely, for each event from the first time series, it looks up the latest event from the other that occurred before it. This blog post is based on Kafka Stream although I found the original idea in this <a href="http://training.data-artisans.com/exercises/eventTimeJoin.html">Flink tutorial</a>, where the idea of event-time join is very ...</p>
 				</p>
 				<a class="read-more" href="event-time-low-latency-joins-with-kafka-streams.html">Continue reading »</a>
-			</div>
-			<div class="post">
-				<h1 class="post-title" href="https://svend.kelesia.com/how-to-integrate-flink-with-confluents-schema-registry.html#how-to-integrate-flink-with-confluents-schema-registry">
-					<a href="https://svend.kelesia.com/how-to-integrate-flink-with-confluents-schema-registry.html#how-to-integrate-flink-with-confluents-schema-registry">How to integrate Flink with Confluent's schema registry</a>
-				</h1>
-				<span class="post-date">Fri 30 June 2017</span>
-				<p>
-					<p>This post illustrates how to use Confluent's Avro serializer in order to let a Flink program consume and produce avro messages through Kafka while keeping track of the Avro Schemas in Confluent's schema registry. This can be interresting if the messages are pumped into or out of Kafka with Kafka Connect, Kafka Streams, or just with anything else also integrated with the schema registry.</p>
-<p><strong>Warning</strong>: As of now (Aug 2017), it turns out using Confluent's Avro deserializer as explained below is not ideal when deploying to FLink in standalone mode, because of the way caching is impemented on Avro level …</p>
-				</p>
-				<a class="read-more" href="how-to-integrate-flink-with-confluents-schema-registry.html">Continue reading »</a>
 			</div>
 	</div>
 	<div class="pagination">

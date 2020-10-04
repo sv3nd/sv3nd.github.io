@@ -67,7 +67,7 @@
 </div>		<div class="content container">
 <div class="post">
 	<h1 class="post-title">How to integrate Flink with Confluent's schema registry</h1>
-	<span class="post-date">Fri 30 June 2017</span>
+	<span class="post-date">Fr 30 Juni 2017</span>
 	<p>This post illustrates how to use Confluent's Avro serializer in order to let a Flink program consume and produce avro messages through Kafka while keeping track of the Avro Schemas in Confluent's schema registry. This can be interresting if the messages are pumped into or out of Kafka with Kafka Connect, Kafka Streams, or just with anything else also integrated with the schema registry.</p>
 <p><strong>Warning</strong>: As of now (Aug 2017), it turns out using Confluent's Avro deserializer as explained below is not ideal when deploying to FLink in standalone mode, because of the way caching is impemented on Avro level. More information in <a href="https://github.com/confluentinc/schema-registry/pull/509#issuecomment-323143951">this Confluent PR</a> as well as in <a href="https://issues.apache.org/jira/browse/FLINK-5633">this FLink JIRA</a>. Hopefully a workaround will be found soon.</p>
 <p>This has been written with the following dependencies in mind: </p>
@@ -97,8 +97,8 @@
       <span class="k">extends</span> <span class="nc">KeyedDeserializationSchema</span><span class="o">[</span><span class="kt">KafkaKV</span><span class="o">]</span> <span class="o">{</span>
 
   <span class="c1">// Flink needs the serializer to be serializable =&gt; this &quot;@transient lazy val&quot; does the trick</span>
-  <span class="nd">@transient</span> <span class="k">lazy</span> <span class="k">val</span> <span class="n">valueDeserializer</span> <span class="k">=</span> <span class="o">{</span>
-    <span class="k">val</span> <span class="n">deserializer</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">KafkaAvroDeserializer</span><span class="o">()</span>
+  <span class="nd">@transient</span> <span class="k">lazy</span> <span class="k">val</span> <span class="n">valueDeserializer</span> <span class="o">=</span> <span class="o">{</span>
+    <span class="k">val</span> <span class="n">deserializer</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">KafkaAvroDeserializer</span><span class="o">()</span>
     <span class="n">deserializer</span><span class="o">.</span><span class="n">configure</span><span class="o">(</span>
       <span class="c1">// other schema-registry configuration parameters can be passed, see the configure() code </span>
       <span class="c1">// for details (among other things, schema cache size)</span>
@@ -107,8 +107,8 @@
     <span class="n">deserializer</span>
   <span class="o">}</span>
 
-  <span class="nd">@transient</span> <span class="k">lazy</span> <span class="k">val</span> <span class="n">keyDeserializer</span> <span class="k">=</span> <span class="o">{</span>
-    <span class="k">val</span> <span class="n">deserializer</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">KafkaAvroDeserializer</span><span class="o">()</span>
+  <span class="nd">@transient</span> <span class="k">lazy</span> <span class="k">val</span> <span class="n">keyDeserializer</span> <span class="o">=</span> <span class="o">{</span>
+    <span class="k">val</span> <span class="n">deserializer</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">KafkaAvroDeserializer</span><span class="o">()</span>
     <span class="n">deserializer</span><span class="o">.</span><span class="n">configure</span><span class="o">(</span>
       <span class="nc">Map</span><span class="o">(</span><span class="nc">AbstractKafkaAvroSerDeConfig</span><span class="o">.</span><span class="nc">SCHEMA_REGISTRY_URL_CONFIG</span> <span class="o">-&gt;</span> <span class="n">schemaRegistryUrl</span><span class="o">).</span><span class="n">asJava</span><span class="o">,</span> 
       <span class="kc">true</span><span class="o">)</span>
@@ -120,13 +120,13 @@
   <span class="k">override</span> <span class="k">def</span> <span class="n">deserialize</span><span class="o">(</span><span class="n">messageKey</span><span class="k">:</span> <span class="kt">Array</span><span class="o">[</span><span class="kt">Byte</span><span class="o">],</span> <span class="n">message</span><span class="k">:</span> <span class="kt">Array</span><span class="o">[</span><span class="kt">Byte</span><span class="o">],</span> 
                            <span class="n">topic</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">partition</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">offset</span><span class="k">:</span> <span class="kt">Long</span><span class="o">)</span><span class="k">:</span> <span class="kt">KafkaKV</span> <span class="o">=</span> <span class="o">{</span>
 
-    <span class="k">val</span> <span class="n">key</span> <span class="k">=</span> <span class="n">keyDeserializer</span><span class="o">(</span><span class="n">topic</span><span class="o">,</span> <span class="n">messageKey</span><span class="o">).</span><span class="n">asInstanceOf</span><span class="o">[</span><span class="kt">GenericRecord</span><span class="o">]</span>
-    <span class="k">val</span> <span class="n">value</span> <span class="k">=</span> <span class="n">valueDeserializer</span><span class="o">.</span><span class="n">deserialize</span><span class="o">(</span><span class="n">topic</span><span class="o">,</span> <span class="n">message</span><span class="o">).</span><span class="n">asInstanceOf</span><span class="o">[</span><span class="kt">GenericRecord</span><span class="o">]</span>
+    <span class="k">val</span> <span class="n">key</span> <span class="o">=</span> <span class="n">keyDeserializer</span><span class="o">(</span><span class="n">topic</span><span class="o">,</span> <span class="n">messageKey</span><span class="o">).</span><span class="n">asInstanceOf</span><span class="o">[</span><span class="kt">GenericRecord</span><span class="o">]</span>
+    <span class="k">val</span> <span class="n">value</span> <span class="o">=</span> <span class="n">valueDeserializer</span><span class="o">.</span><span class="n">deserialize</span><span class="o">(</span><span class="n">topic</span><span class="o">,</span> <span class="n">message</span><span class="o">).</span><span class="n">asInstanceOf</span><span class="o">[</span><span class="kt">GenericRecord</span><span class="o">]</span>
 
     <span class="nc">KafkaKV</span><span class="o">(</span><span class="n">key</span><span class="o">,</span> <span class="n">value</span><span class="o">)</span>
   <span class="o">}</span>
 
-  <span class="k">override</span> <span class="k">def</span> <span class="n">getProducedType</span><span class="k">:</span> <span class="kt">TypeInformation</span><span class="o">[</span><span class="kt">KafkaKV</span><span class="o">]</span> <span class="k">=</span> 
+  <span class="k">override</span> <span class="k">def</span> <span class="n">getProducedType</span><span class="k">:</span> <span class="kt">TypeInformation</span><span class="o">[</span><span class="kt">KafkaKV</span><span class="o">]</span> <span class="o">=</span> 
       <span class="nc">TypeExtractor</span><span class="o">.</span><span class="n">getForClass</span><span class="o">(</span><span class="n">classOf</span><span class="o">[</span><span class="kt">KafkaKV</span><span class="o">])</span>
 <span class="o">}</span>
 </pre></div>
@@ -139,11 +139,11 @@
 
   <span class="o">[</span><span class="kt">...</span><span class="o">]</span>
 
-  <span class="k">val</span> <span class="n">env</span> <span class="k">=</span> <span class="nc">StreamExecutionEnvironment</span><span class="o">.</span><span class="n">getExecutionEnvironment</span>
+  <span class="k">val</span> <span class="n">env</span> <span class="o">=</span> <span class="nc">StreamExecutionEnvironment</span><span class="o">.</span><span class="n">getExecutionEnvironment</span>
 
-  <span class="k">val</span> <span class="n">kafkaConsumerConfig</span> <span class="k">=</span> <span class="o">...</span>
+  <span class="k">val</span> <span class="n">kafkaConsumerConfig</span> <span class="o">=</span> <span class="o">...</span>
 
-  <span class="k">val</span> <span class="n">kafkaStream</span> <span class="k">=</span> <span class="n">env</span>
+  <span class="k">val</span> <span class="n">kafkaStream</span> <span class="o">=</span> <span class="n">env</span>
     <span class="o">.</span><span class="n">addSource</span><span class="o">(</span>
       <span class="k">new</span> <span class="nc">FlinkKafkaConsumer010</span><span class="o">[</span><span class="kt">KafkaKV</span><span class="o">](</span>
         <span class="s">&quot;someInboundTopic&quot;</span><span class="o">,</span>
@@ -161,39 +161,39 @@
 <span class="k">case</span> <span class="k">class</span> <span class="nc">SomePojo</span><span class="o">(</span><span class="n">foo</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">bar</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span>
 
 <span class="k">class</span> <span class="nc">ConfluentRegistrySerialization</span><span class="o">(</span><span class="n">topic</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">schemaRegistryUrl</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span> 
-        <span class="k">extends</span> <span class="nc">KeyedSerializationSchema</span><span class="o">[(</span><span class="kt">KafkaKey</span>, <span class="kt">SomePojo</span><span class="o">)]{</span>
+        <span class="k">extends</span> <span class="nc">KeyedSerializationSchema</span><span class="o">[(</span><span class="kt">KafkaKey</span><span class="p">,</span> <span class="kt">SomePojo</span><span class="o">)]{</span>
 
-  <span class="nd">@transient</span> <span class="k">lazy</span> <span class="k">val</span> <span class="n">valueSerializer</span> <span class="k">=</span> <span class="o">{</span>
-    <span class="k">val</span> <span class="n">serializer</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">KafkaAvroSerializer</span><span class="o">()</span>
+  <span class="nd">@transient</span> <span class="k">lazy</span> <span class="k">val</span> <span class="n">valueSerializer</span> <span class="o">=</span> <span class="o">{</span>
+    <span class="k">val</span> <span class="n">serializer</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">KafkaAvroSerializer</span><span class="o">()</span>
     <span class="n">serializer</span><span class="o">.</span><span class="n">configure</span><span class="o">(</span>
       <span class="nc">Map</span><span class="o">(</span><span class="nc">AbstractKafkaAvroSerDeConfig</span><span class="o">.</span><span class="nc">SCHEMA_REGISTRY_URL_CONFIG</span> <span class="o">-&gt;</span> <span class="n">schemaRegistryUrl</span><span class="o">).</span><span class="n">asJava</span><span class="o">,</span>
       <span class="kc">false</span><span class="o">)</span>
     <span class="n">serializer</span>
   <span class="o">}</span>
 
-  <span class="nd">@transient</span> <span class="k">lazy</span> <span class="k">val</span> <span class="n">keySerializer</span> <span class="k">=</span> <span class="o">{</span>
-    <span class="k">val</span> <span class="n">serializer</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">KafkaAvroSerializer</span><span class="o">()</span>
+  <span class="nd">@transient</span> <span class="k">lazy</span> <span class="k">val</span> <span class="n">keySerializer</span> <span class="o">=</span> <span class="o">{</span>
+    <span class="k">val</span> <span class="n">serializer</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">KafkaAvroSerializer</span><span class="o">()</span>
     <span class="n">serializer</span><span class="o">.</span><span class="n">configure</span><span class="o">(</span>
       <span class="nc">Map</span><span class="o">(</span><span class="nc">AbstractKafkaAvroSerDeConfig</span><span class="o">.</span><span class="nc">SCHEMA_REGISTRY_URL_CONFIG</span> <span class="o">-&gt;</span> <span class="n">schemaRegistryUrl</span><span class="o">).</span><span class="n">asJava</span><span class="o">,</span>
       <span class="kc">true</span><span class="o">)</span>
     <span class="n">serializer</span>
   <span class="o">}</span>
 
-  <span class="k">override</span> <span class="k">def</span> <span class="n">serializeKey</span><span class="o">(</span><span class="n">keyedMessages</span><span class="k">:</span> <span class="o">(</span><span class="kt">KafkaKey</span><span class="o">,</span> <span class="kt">SomePojo</span><span class="o">))</span><span class="k">:</span> <span class="kt">Array</span><span class="o">[</span><span class="kt">Byte</span><span class="o">]</span> <span class="k">=</span>
+  <span class="k">override</span> <span class="k">def</span> <span class="n">serializeKey</span><span class="o">(</span><span class="n">keyedMessages</span><span class="k">:</span> <span class="o">(</span><span class="kt">KafkaKey</span><span class="o">,</span> <span class="kt">SomePojo</span><span class="o">))</span><span class="k">:</span> <span class="kt">Array</span><span class="o">[</span><span class="kt">Byte</span><span class="o">]</span> <span class="o">=</span>
     <span class="n">keySerializer</span><span class="o">.</span><span class="n">serialize</span><span class="o">(</span><span class="n">topic</span><span class="o">,</span> <span class="n">keyedMessages</span><span class="o">.</span><span class="n">_1</span><span class="o">)</span>
 
   <span class="k">override</span> <span class="k">def</span> <span class="n">getTargetTopic</span><span class="o">(</span><span class="n">element</span><span class="k">:</span> <span class="o">(</span><span class="kt">KafkaKey</span><span class="o">,</span> <span class="kt">SomePojo</span><span class="o">))</span><span class="k">:</span> <span class="kt">String</span> <span class="o">=</span> <span class="n">topic</span>
 
-  <span class="k">override</span> <span class="k">def</span> <span class="n">serializeValue</span><span class="o">(</span><span class="n">keyedMessages</span><span class="k">:</span> <span class="o">(</span><span class="kt">KafkaKey</span><span class="o">,</span> <span class="kt">SomePojo</span><span class="o">))</span><span class="k">:</span> <span class="kt">Array</span><span class="o">[</span><span class="kt">Byte</span><span class="o">]</span> <span class="k">=</span>
+  <span class="k">override</span> <span class="k">def</span> <span class="n">serializeValue</span><span class="o">(</span><span class="n">keyedMessages</span><span class="k">:</span> <span class="o">(</span><span class="kt">KafkaKey</span><span class="o">,</span> <span class="kt">SomePojo</span><span class="o">))</span><span class="k">:</span> <span class="kt">Array</span><span class="o">[</span><span class="kt">Byte</span><span class="o">]</span> <span class="o">=</span>
      <span class="n">valueSerializer</span><span class="o">.</span><span class="n">serialize</span><span class="o">(</span><span class="n">topic</span><span class="o">,</span> <span class="n">keyedMessages</span><span class="o">.</span><span class="n">_2</span><span class="o">)</span>
 <span class="o">}</span>
 </pre></div>
 
 
 <p>And again, once this serialization adapter is there, all we have to do is </p>
-<div class="highlight"><pre><span></span>  <span class="k">val</span> <span class="n">kafkaProducerConfig</span> <span class="k">=</span> <span class="o">...</span>
+<div class="highlight"><pre><span></span>  <span class="k">val</span> <span class="n">kafkaProducerConfig</span> <span class="o">=</span> <span class="o">...</span>
 
-  <span class="k">val</span> <span class="n">someStream</span> <span class="k">=</span> <span class="n">kafkaStream</span><span class="o">.</span><span class="n">map</span><span class="o">(</span><span class="n">blabla</span><span class="o">)...</span>
+  <span class="k">val</span> <span class="n">someStream</span> <span class="o">=</span> <span class="n">kafkaStream</span><span class="o">.</span><span class="n">map</span><span class="o">(</span><span class="n">blabla</span><span class="o">)...</span>
 
   <span class="nc">FlinkKafkaProducer010</span><span class="o">.</span><span class="n">writeToKafkaWithTimestamps</span><span class="o">(</span>
     <span class="n">someStream</span><span class="o">.</span><span class="n">javaStream</span><span class="o">,</span>

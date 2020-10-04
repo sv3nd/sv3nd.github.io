@@ -67,7 +67,7 @@
 </div>		<div class="content container">
 <div class="post">
 	<h1 class="post-title">Sending Avro records from Scala to Azure eventhub over AMQP</h1>
-	<span class="post-date">Mon 26 June 2017</span>
+	<span class="post-date">Mo 26 Juni 2017</span>
 	<p>This post illustrates how to emit Avro records to Azure EventHub from scala in such a way that they are directly parsed by the other services of the Azure platform (e.g. Azure Stream Analytics). </p>
 <p>There exists a Java API for communicating with Azure EventHub which is documented as part of the <a href="https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-java-get-started-send">azure documentation</a> and even made <a href="https://github.com/Azure/azure-event-hubs-java">open source on github</a> (things have changed at Microsoft...). That said, the most detailed documentation still seems to be based on the .NET API as manipulated with Visual Studio on Windows. Me being a Scala developer on a Mac, it took me a bit of experimentation to emit Avro messages to EventHub and have an Azure Stream Analytics job parse them correctly.</p>
 <p>The steps below assume that you have access to the Azure portal and have created an EventHub namespace as well as an EventHub instance. If not, see the <a href="https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-create">Azure documentation here</a> for details.</p>
@@ -94,36 +94,36 @@
 
 <span class="o">[</span><span class="kt">...</span><span class="o">]</span>
 
-  <span class="k">val</span> <span class="n">ehClient</span> <span class="k">=</span> <span class="nc">EventHubClient</span><span class="o">.</span><span class="n">createFromConnectionStringSync</span><span class="o">(</span><span class="s">&quot;&lt;your eventhub connection string&gt;&quot;</span><span class="o">)</span>
+  <span class="k">val</span> <span class="n">ehClient</span> <span class="o">=</span> <span class="nc">EventHubClient</span><span class="o">.</span><span class="n">createFromConnectionStringSync</span><span class="o">(</span><span class="s">&quot;&lt;your eventhub connection string&gt;&quot;</span><span class="o">)</span>
 
   <span class="c1">// number of batches to send to the EventHub</span>
-  <span class="k">val</span> <span class="n">batch_num</span> <span class="k">=</span> <span class="mi">10</span>
+  <span class="k">val</span> <span class="n">batch_num</span> <span class="o">=</span> <span class="mi">10</span>
 
   <span class="c1">// number of EventData instances to put inside each batch</span>
-  <span class="k">val</span> <span class="n">amqpMessagePerBatch</span> <span class="k">=</span> <span class="mi">15</span>
+  <span class="k">val</span> <span class="n">amqpMessagePerBatch</span> <span class="o">=</span> <span class="mi">15</span>
 
   <span class="c1">// number of avro records to bundle inside each AMQP message</span>
-  <span class="k">val</span> <span class="n">userMessagesPerAmqp</span> <span class="k">=</span> <span class="mi">20</span>
+  <span class="k">val</span> <span class="n">userMessagesPerAmqp</span> <span class="o">=</span> <span class="mi">20</span>
 
-  <span class="k">val</span> <span class="n">datumWriter</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">GenericDatumWriter</span><span class="o">[</span><span class="kt">GenericRecord</span><span class="o">](</span><span class="nc">UserMessage</span><span class="o">.</span><span class="n">schema</span><span class="o">)</span>
-  <span class="k">val</span> <span class="n">writer</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">DataFileWriter</span><span class="o">[</span><span class="kt">GenericRecord</span><span class="o">](</span><span class="n">datumWriter</span><span class="o">)</span>
+  <span class="k">val</span> <span class="n">datumWriter</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">GenericDatumWriter</span><span class="o">[</span><span class="kt">GenericRecord</span><span class="o">](</span><span class="nc">UserMessage</span><span class="o">.</span><span class="n">schema</span><span class="o">)</span>
+  <span class="k">val</span> <span class="n">writer</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">DataFileWriter</span><span class="o">[</span><span class="kt">GenericRecord</span><span class="o">](</span><span class="n">datumWriter</span><span class="o">)</span>
 
   <span class="c1">// only Deflate seems to be compatible with Azure at the moment </span>
   <span class="n">writer</span><span class="o">.</span><span class="n">setCodec</span><span class="o">(</span><span class="nc">CodecFactory</span><span class="o">.</span><span class="n">deflateCodec</span><span class="o">(</span><span class="mi">9</span><span class="o">))</span>  
   <span class="c1">//writer.setCodec(CodecFactory.snappyCodec()) // not currently supported</span>
   <span class="c1">//writer.setCodec(CodecFactory.bzip2Codec())  // not currently supported</span>
 
-  <span class="k">val</span> <span class="n">futures</span> <span class="k">=</span> <span class="o">(</span><span class="mi">1</span> <span class="n">to</span> <span class="n">batch_num</span><span class="o">)</span>
-    <span class="o">.</span><span class="n">map</span><span class="o">{</span> <span class="n">batchid</span> <span class="k">=&gt;</span>
+  <span class="k">val</span> <span class="n">futures</span> <span class="o">=</span> <span class="o">(</span><span class="mi">1</span> <span class="n">to</span> <span class="n">batch_num</span><span class="o">)</span>
+    <span class="o">.</span><span class="n">map</span><span class="o">{</span> <span class="n">batchid</span> <span class="o">=&gt;</span>
 
       <span class="c1">// list of EventData instances, each with a bunch of Avro records</span>
-      <span class="k">val</span> <span class="n">eventHubMessages</span> <span class="k">=</span> <span class="o">(</span><span class="mi">1</span> <span class="n">to</span> <span class="n">amqpMessagePerBatch</span><span class="o">).</span><span class="n">map</span> <span class="o">{</span> <span class="k">_</span> <span class="k">=&gt;</span>
+      <span class="k">val</span> <span class="n">eventHubMessages</span> <span class="o">=</span> <span class="o">(</span><span class="mi">1</span> <span class="n">to</span> <span class="n">amqpMessagePerBatch</span><span class="o">).</span><span class="n">map</span> <span class="o">{</span> <span class="k">_</span> <span class="o">=&gt;</span>
 
-        <span class="k">val</span> <span class="n">bos</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">ByteArrayOutputStream</span><span class="o">()</span>
+        <span class="k">val</span> <span class="n">bos</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ByteArrayOutputStream</span><span class="o">()</span>
         <span class="n">writer</span><span class="o">.</span><span class="n">create</span><span class="o">(</span><span class="nc">UserMessage</span><span class="o">.</span><span class="n">schema</span><span class="o">,</span> <span class="n">bos</span><span class="o">)</span>
 
         <span class="c1">// MessageGen.genMessage is a generator of random data</span>
-        <span class="o">(</span><span class="mi">1</span> <span class="n">to</span> <span class="n">userMessagesPerAmqp</span><span class="o">).</span><span class="n">foreach</span> <span class="o">{</span> <span class="k">_</span> <span class="k">=&gt;</span> <span class="n">writer</span><span class="o">.</span><span class="n">append</span><span class="o">(</span><span class="nc">MessageGen</span><span class="o">.</span><span class="n">genMessage</span><span class="o">.</span><span class="n">toAvro</span><span class="o">)}</span>
+        <span class="o">(</span><span class="mi">1</span> <span class="n">to</span> <span class="n">userMessagesPerAmqp</span><span class="o">).</span><span class="n">foreach</span> <span class="o">{</span> <span class="k">_</span> <span class="o">=&gt;</span> <span class="n">writer</span><span class="o">.</span><span class="n">append</span><span class="o">(</span><span class="nc">MessageGen</span><span class="o">.</span><span class="n">genMessage</span><span class="o">.</span><span class="n">toAvro</span><span class="o">)}</span>
 
         <span class="n">writer</span><span class="o">.</span><span class="n">close</span><span class="o">()</span>
         <span class="n">bos</span><span class="o">.</span><span class="n">close</span><span class="o">()</span>

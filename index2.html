@@ -67,54 +67,26 @@
 </div>		<div class="content container">
 	<div class="posts">
 			<div class="post">
+				<h1 class="post-title" href="https://svend.kelesia.com/how-to-integrate-flink-with-confluents-schema-registry.html#how-to-integrate-flink-with-confluents-schema-registry">
+					<a href="https://svend.kelesia.com/how-to-integrate-flink-with-confluents-schema-registry.html#how-to-integrate-flink-with-confluents-schema-registry">How to integrate Flink with Confluent's schema registry</a>
+				</h1>
+				<span class="post-date">Fr 30 Juni 2017</span>
+				<p>
+					<p>This post illustrates how to use Confluent's Avro serializer in order to let a Flink program consume and produce avro messages through Kafka while keeping track of the Avro Schemas in Confluent's schema registry. This can be interresting if the messages are pumped into or out of Kafka with Kafka Connect, Kafka Streams, or just with anything else also integrated with the schema registry.</p>
+<p><strong>Warning</strong>: As of now (Aug 2017), it turns out using Confluent's Avro deserializer as explained below is not ideal when deploying to FLink in standalone mode, because of the way caching is impemented ...</p>
+				</p>
+				<a class="read-more" href="how-to-integrate-flink-with-confluents-schema-registry.html">Continue reading »</a>
+			</div>
+			<div class="post">
 				<h1 class="post-title" href="https://svend.kelesia.com/sending-avro-records-from-scala-to-azure-eventhub-over-amqp.html#sending-avro-records-from-scala-to-azure-eventhub-over-amqp">
 					<a href="https://svend.kelesia.com/sending-avro-records-from-scala-to-azure-eventhub-over-amqp.html#sending-avro-records-from-scala-to-azure-eventhub-over-amqp">Sending Avro records from Scala to Azure eventhub over AMQP</a>
 				</h1>
-				<span class="post-date">Mon 26 June 2017</span>
+				<span class="post-date">Mo 26 Juni 2017</span>
 				<p>
 					<p>This post illustrates how to emit Avro records to Azure EventHub from scala in such a way that they are directly parsed by the other services of the Azure platform (e.g. Azure Stream Analytics). </p>
-<p>There exists a Java API for communicating with Azure EventHub which is documented as part of the <a href="https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-java-get-started-send">azure documentation</a> and even made <a href="https://github.com/Azure/azure-event-hubs-java">open source on github</a> (things have changed at Microsoft...). That said, the most detailed documentation still seems to be based on the .NET API as manipulated with Visual Studio on Windows. Me being a Scala developer on a Mac, it took me a …</p>
+<p>There exists a Java API for communicating with Azure EventHub which is documented as part of the <a href="https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-java-get-started-send">azure documentation</a> and even made <a href="https://github.com/Azure/azure-event-hubs-java">open source on github</a> (things have changed at Microsoft...). That said, the most detailed documentation still seems to be based on the .NET API as manipulated with Visual Studio on Windows. Me being a Scala developer on a Mac, it took me a ...</p>
 				</p>
 				<a class="read-more" href="sending-avro-records-from-scala-to-azure-eventhub-over-amqp.html">Continue reading »</a>
-			</div>
-			<div class="post">
-				<h1 class="post-title" href="https://svend.kelesia.com/using-model-post-processor-within-scikit-learn-pipelines.html#using-model-post-processor-within-scikit-learn-pipelines">
-					<a href="https://svend.kelesia.com/using-model-post-processor-within-scikit-learn-pipelines.html#using-model-post-processor-within-scikit-learn-pipelines">Using model post-processor within scikit-learn pipelines</a>
-				</h1>
-				<span class="post-date">Tue 18 October 2016</span>
-				<p>
-					
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div><div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="On-the-lack-of-post-processors">On the lack of post-processors<a class="anchor-link" href="#On-the-lack-of-post-processors">¶</a></h2><p><a href="http://scikit-learn.org/stable/modules/pipeline.html#pipeline">Pipelines</a> are a very handy and central feature of the scikit-learn library that enable to chain sequences, or even, in a limited way, DAGs, of data transformers and one machine learning model. They greatly facilitate the application of cross-validation scoring or hyper-parameter search on the resulting pipeline as a whole. They also ease the productization of a machine learning exercise by providing one single encapsulated trained model that can be applied as one instance on a test set or integrated into a production product.</p>
-<p>For a very clear introduction, see also the excellent <a href="http://zacstewart.com/2014/08/05/pipelines-of-featureunions-of-pipelines.html">Using scikit-learn Pipelines and FeatureUnions</a>
-				</p>
-				<a class="read-more" href="using-model-post-processor-within-scikit-learn-pipelines.html">Continue reading »</a>
-			</div>
-			<div class="post">
-				<h1 class="post-title" href="https://svend.kelesia.com/how-to-normalize-log-likelihood-vectors.html#how-to-normalize-log-likelihood-vectors">
-					<a href="https://svend.kelesia.com/how-to-normalize-log-likelihood-vectors.html#how-to-normalize-log-likelihood-vectors">How to normalize log-likelihood vectors</a>
-				</h1>
-				<span class="post-date">Sun 02 October 2016</span>
-				<p>
-					
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div><div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>What is the best way to convert a log-likelihood vector into the corresponding log-probability vector, i.e. a vector of values whose exponential sum up to one?</p>
-<p>TLDR: just subtract the <code>scipy.misc.logsumexp()</code> of that vector.</p>
-<p>Note: this notebook is <a href="https://github.com/svendx4f/svendx4f.github.io/blob/dev/content/how_to_normalize_likelihood_vectors.ipynb">available on Github</a> in case you want to play around with it.</p>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div><div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Usage-of-logs-in-probability-and-likelihood-computations">Usage of logs in probability and likelihood computations<a class="anchor-link" href="#Usage-of-logs-in-probability-and-likelihood-computations">¶</a></h2><p>Given a set of independent events $D= \{E_i\}$ with probabilities $\{p_i\}$, the probability of the joint occurance of all events in $D$ is simply</p>
-$$P_D = \prod\limits_i^N p_i$$<p>This quantity however quickly gets impossible to compute on a computer as-written above since, each $p_i$ $\in [0,1]$, the result gets smaller and smaller as the multiplication goes on and quickly leads to underflow. Usage of logarithms of probabilities and of likelihoods is a very common computational trick to avoid that underflow which exploits the fact that a logarithm transforms a product into a sum, i.e.</p>
-				</p>
-				<a class="read-more" href="how-to-normalize-log-likelihood-vectors.html">Continue reading »</a>
 			</div>
 	</div>
 	<div class="pagination">
