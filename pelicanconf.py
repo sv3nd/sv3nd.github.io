@@ -39,7 +39,8 @@ DEFAULT_PAGINATION = 5
 # Uncomment following line if you want document-relative URLs when developing
 #RELATIVE_URLS = True
 
-THEME = '/home/svend/dev-spaces/sv3ndk/pelican-hyde'
+THEME = '/home/svend/dev-projects/github.com.sv3ndk/sv3ndk/pelican-hyde'
+#THEME_TEMPLATES_OVERRIDES = '/home/svend/dev-projects/github.com.sv3ndk/sv3ndk/pelican-themes'
 
 MARKUP = ('md', 'ipynb')
 

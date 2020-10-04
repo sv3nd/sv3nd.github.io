@@ -1,8 +1,18 @@
 following instructions from: https://www.dataquest.io/blog/how-to-setup-a-data-science-blog/
-all the below is done on the dev branch
-also, this requires https://github.com/davisp/ghp-import for merging the output to the master branch
 
-make sure to be on the dev branch
+(in short, do this once:
+
+create a virtual env:
+
+virtualenv ~/.virtualenvs/sv3ndk-blog
+_ sudo apt-get install  libpng-dev r-base libfreetype-dev    
+
+pip install  -r requirements.txt
+)
+
+also, this requires https://github.com/davisp/ghp-import for merging the output to the master branch (see command below)
+
+all the below is done on the dev branch
 
 source ~/.virtualenvs/sv3ndk-blog/bin/activate
 

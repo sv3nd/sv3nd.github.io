@@ -1,0 +1,13 @@
+Markdown
+pelican
+jupyter>=1.0
+ipython>=4.0
+nbconvert>=4.0
+beautifulsoup4
+ghp-import==0.4.1
+matplotlib==2.2.3
+pandas
+scipy
+rpy2
+simple-http-server
+pelican-alias
